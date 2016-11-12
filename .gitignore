@@ -1,6 +1,15 @@
+# Gradle
 .gradle
-.idea
-*.iml
-local.properties
 build/
+local.properties
 gradle.properties
+
+# IDEA
+*.iml
+*.idea
+
+# Eclipse
+.project
+.settings/
+.classpath
+
