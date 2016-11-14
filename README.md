@@ -4,8 +4,11 @@ A Java library for communicating via Signal.
 
 ## Unofficial fork!
 
-This library is an unofficial fork where I publish my changes to the official library (upstream).
+This library is an unofficial fork where we publish our changes to the official library (upstream).
+This fork allows using the Signal servers without GCM and provides provisioning, i.e. linking devices, and some bugfixes.
 Use it at your own risk. OpenWhisperSystems is not responsible for this fork.
+
+The library is available on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.turasa%22).
 
 ## Implementing the Signal Protocol interfaces
 
