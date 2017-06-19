@@ -564,7 +564,9 @@ public class SignalServiceMessageSender {
     }
 
     for (int deviceId : store.getSubDeviceSessions(recipient.getNumber())) {
-      if(!myself || deviceId != credentialsProvider.getDeviceId()) {
+
+      if((!myself || deviceId != credentialsProvider.getDeviceId()) &&
+          store.containsSession(new SignalProtocolAddress(recipient.getNumber(), deviceId))) {
         messages.add(getEncryptedMessage(socket, recipient, deviceId, plaintext, legacy, silent));
       }
     }
@@ -576,7 +578,7 @@ public class SignalServiceMessageSender {
       throws IOException, UntrustedIdentityException
   {
     SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), deviceId);
-    SignalServiceCipher cipher                = new SignalServiceCipher(localAddress, store);
+    SignalServiceCipher   cipher                = new SignalServiceCipher(localAddress, store);
 
     if (!store.containsSession(signalProtocolAddress)) {
       try {
