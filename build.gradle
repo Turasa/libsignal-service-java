@@ -1,6 +1,6 @@
 subprojects {
-    ext.version_number     = "2.5.11_unofficial_1"
-    ext.group_info         = "com.github.turasa"
+    ext.version_number     = "2.5.12"
+    ext.group_info         = "org.whispersystems"
     ext.signal_version     = "2.5.3"
 
     if (JavaVersion.current().isJava8Compatible()) {
