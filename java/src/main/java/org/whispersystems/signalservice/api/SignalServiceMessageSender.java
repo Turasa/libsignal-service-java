@@ -145,7 +145,7 @@ public class SignalServiceMessageSender {
       throws IOException, UntrustedIdentityException
   {
     byte[] content = createCallContent(message);
-    sendMessage(recipient, System.currentTimeMillis(), content, false, true);
+    sendMessage(recipient, System.currentTimeMillis(), content, true);
   }
 
   /**
@@ -162,11 +162,11 @@ public class SignalServiceMessageSender {
     byte[]              content   = createMessageContent(message);
     long                timestamp = message.getTimestamp();
     boolean             silent    = message.getGroupInfo().isPresent() && message.getGroupInfo().get().getType() == SignalServiceGroup.Type.REQUEST_INFO;
-    SendMessageResponse response  = sendMessage(recipient, timestamp, content, true, silent);
+    SendMessageResponse response  = sendMessage(recipient, timestamp, content, silent);
 
     if (response != null && response.getNeedsSync()) {
       byte[] syncMessage = createMultiDeviceSentTranscriptContent(content, Optional.of(recipient), timestamp);
-      sendMessage(localAddress, timestamp, syncMessage, false, false);
+      sendMessage(localAddress, timestamp, syncMessage, false);
     }
 
     if (message.isEndSession()) {
@@ -191,12 +191,12 @@ public class SignalServiceMessageSender {
   {
     byte[]                  content   = createMessageContent(message);
     long                    timestamp = message.getTimestamp();
-    SendMessageResponseList response  = sendMessage(recipients, timestamp, content, true);
+    SendMessageResponseList response  = sendMessage(recipients, timestamp, content);
 
     try {
       if (response.getNeedsSync()) {
         byte[] syncMessage = createMultiDeviceSentTranscriptContent(content, Optional.<SignalServiceAddress>absent(), timestamp);
-        sendMessage(localAddress, timestamp, syncMessage, false, false);
+        sendMessage(localAddress, timestamp, syncMessage, false);
       }
     } catch (UntrustedIdentityException e) {
       response.addException(e);
@@ -229,7 +229,7 @@ public class SignalServiceMessageSender {
       throw new IOException("Unsupported sync message!");
     }
 
-    sendMessage(localAddress, System.currentTimeMillis(), content, false, false);
+    sendMessage(localAddress, System.currentTimeMillis(), content, false);
   }
 
   public void setSoTimeoutMillis(long soTimeoutMillis) {
@@ -241,8 +241,9 @@ public class SignalServiceMessageSender {
   }
 
   private byte[] createMessageContent(SignalServiceDataMessage message) throws IOException {
-    DataMessage.Builder     builder  = DataMessage.newBuilder();
-    List<AttachmentPointer> pointers = createAttachmentPointers(message.getAttachments());
+    Content.Builder         container = Content.newBuilder();
+    DataMessage.Builder     builder   = DataMessage.newBuilder();
+    List<AttachmentPointer> pointers  = createAttachmentPointers(message.getAttachments());
 
     if (!pointers.isEmpty()) {
       builder.addAllAttachments(pointers);
@@ -268,7 +269,7 @@ public class SignalServiceMessageSender {
       builder.setExpireTimer(message.getExpiresInSeconds());
     }
 
-    return builder.build().toByteArray();
+    return container.setDataMessage(builder).build().toByteArray();
   }
 
   private byte[] createCallContent(SignalServiceCallMessage callMessage) {
@@ -440,14 +441,14 @@ public class SignalServiceMessageSender {
     return builder.build();
   }
 
-  private SendMessageResponseList sendMessage(List<SignalServiceAddress> recipients, long timestamp, byte[] content, boolean legacy)
+  private SendMessageResponseList sendMessage(List<SignalServiceAddress> recipients, long timestamp, byte[] content)
       throws IOException
   {
     SendMessageResponseList responseList = new SendMessageResponseList();
 
     for (SignalServiceAddress recipient : recipients) {
       try {
-        SendMessageResponse response = sendMessage(recipient, timestamp, content, legacy, false);
+        SendMessageResponse response = sendMessage(recipient, timestamp, content, false);
         responseList.addResponse(response);
       } catch (UntrustedIdentityException e) {
         Log.w(TAG, e);
@@ -464,12 +465,12 @@ public class SignalServiceMessageSender {
     return responseList;
   }
 
-  private SendMessageResponse sendMessage(SignalServiceAddress recipient, long timestamp, byte[] content, boolean legacy, boolean silent)
+  private SendMessageResponse sendMessage(SignalServiceAddress recipient, long timestamp, byte[] content, boolean silent)
       throws UntrustedIdentityException, IOException
   {
     for (int i=0;i<3;i++) {
       try {
-        OutgoingPushMessageList messages = getEncryptedMessages(socket, recipient, timestamp, content, legacy, silent);
+        OutgoingPushMessageList messages = getEncryptedMessages(socket, recipient, timestamp, content, silent);
 
         if (pipe.isPresent()) {
           try {
@@ -552,7 +553,6 @@ public class SignalServiceMessageSender {
                                                        SignalServiceAddress recipient,
                                                        long timestamp,
                                                        byte[] plaintext,
-                                                       boolean legacy,
                                                        boolean silent)
       throws IOException, UntrustedIdentityException
   {
@@ -560,21 +560,20 @@ public class SignalServiceMessageSender {
 
     boolean myself = recipient.equals(localAddress);
     if (!myself || credentialsProvider.getDeviceId() != SignalServiceAddress.DEFAULT_DEVICE_ID) {
-      messages.add(getEncryptedMessage(socket, recipient, SignalServiceAddress.DEFAULT_DEVICE_ID, plaintext, legacy, silent));
+      messages.add(getEncryptedMessage(socket, recipient, SignalServiceAddress.DEFAULT_DEVICE_ID, plaintext, silent));
     }
 
     for (int deviceId : store.getSubDeviceSessions(recipient.getNumber())) {
-
       if((!myself || deviceId != credentialsProvider.getDeviceId()) &&
           store.containsSession(new SignalProtocolAddress(recipient.getNumber(), deviceId))) {
-        messages.add(getEncryptedMessage(socket, recipient, deviceId, plaintext, legacy, silent));
+        messages.add(getEncryptedMessage(socket, recipient, deviceId, plaintext, silent));
       }
     }
 
     return new OutgoingPushMessageList(recipient.getNumber(), timestamp, recipient.getRelay().orNull(), messages);
   }
 
-  private OutgoingPushMessage getEncryptedMessage(PushServiceSocket socket, SignalServiceAddress recipient, int deviceId, byte[] plaintext, boolean legacy, boolean silent)
+  private OutgoingPushMessage getEncryptedMessage(PushServiceSocket socket, SignalServiceAddress recipient, int deviceId, byte[] plaintext, boolean silent)
       throws IOException, UntrustedIdentityException
   {
     SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getNumber(), deviceId);
@@ -606,7 +605,7 @@ public class SignalServiceMessageSender {
     }
 
     try {
-      return cipher.encrypt(signalProtocolAddress, plaintext, legacy, silent);
+      return cipher.encrypt(signalProtocolAddress, plaintext, silent);
     } catch (org.whispersystems.libsignal.UntrustedIdentityException e) {
       throw new UntrustedIdentityException("Untrusted on send", recipient.getNumber(), e.getUntrustedIdentity());
     }
