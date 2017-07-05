@@ -33,6 +33,10 @@ public class AccountAttributes {
     this.fetchesMessages = fetchesMessages;
   }
 
+  public AccountAttributes(String signalingKey, int registrationId, boolean fetchesMessages) {
+    this(signalingKey, registrationId, true, true, fetchesMessages);
+  }
+
   public AccountAttributes(String signalingKey, int registrationId, boolean voice, boolean video) {
     this(signalingKey, registrationId, voice, video, false);
   }
