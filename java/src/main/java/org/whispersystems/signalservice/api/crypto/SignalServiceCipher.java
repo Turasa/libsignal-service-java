@@ -46,12 +46,14 @@ import org.whispersystems.signalservice.api.messages.multidevice.VerifiedMessage
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.internal.push.OutgoingPushMessage;
 import org.whispersystems.signalservice.internal.push.PushTransportDetails;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.AttachmentPointer;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Content;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.DataMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Envelope.Type;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.SyncMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.SyncMessage.Blocked;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Verified;
 import org.whispersystems.signalservice.internal.util.Base64;
 
 import java.util.LinkedList;
@@ -77,7 +79,7 @@ public class SignalServiceCipher {
     this.localAddress = localAddress;
   }
 
-  public OutgoingPushMessage encrypt(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean legacy, boolean silent)
+  public OutgoingPushMessage encrypt(SignalProtocolAddress destination, byte[] unpaddedMessage, boolean silent)
       throws UntrustedIdentityException
   {
     SessionCipher        sessionCipher        = new SessionCipher(signalProtocolStore, destination);
@@ -94,8 +96,7 @@ public class SignalServiceCipher {
       default: throw new AssertionError("Bad type: " + message.getType());
     }
 
-    return new OutgoingPushMessage(type, destination.getDeviceId(), remoteRegistrationId,
-                                   legacy ? body : null, legacy ? null : body, silent);
+    return new OutgoingPushMessage(type, destination.getDeviceId(), remoteRegistrationId, body, silent);
   }
 
   /**
@@ -238,30 +239,25 @@ public class SignalServiceCipher {
       return SignalServiceSyncMessage.forBlocked(message);
     }
 
-    if (content.getVerifiedList().size() > 0) {
+    if (content.hasVerified()) {
       try {
-        List<VerifiedMessage> verifiedMessages = new LinkedList<>();
+        Verified    verified    = content.getVerified();
+        String      destination = verified.getDestination();
+        IdentityKey identityKey = new IdentityKey(verified.getIdentityKey().toByteArray(), 0);
 
-        for (SyncMessage.Verified verified : content.getVerifiedList()) {
-          String        destination = verified.getDestination();
-          IdentityKey   identityKey = new IdentityKey(verified.getIdentityKey().toByteArray(), 0);
+        VerifiedState verifiedState;
 
-          VerifiedState verifiedState;
-
-          if (verified.getState() == SyncMessage.Verified.State.DEFAULT) {
-            verifiedState = VerifiedState.DEFAULT;
-          } else if (verified.getState() == SyncMessage.Verified.State.VERIFIED) {
-            verifiedState = VerifiedState.VERIFIED;
-          } else if (verified.getState() == SyncMessage.Verified.State.UNVERIFIED) {
-            verifiedState = VerifiedState.UNVERIFIED;
-          } else {
-            throw new InvalidMessageException("Unknown state: " + verified.getState().getNumber());
-          }
-
-          verifiedMessages.add(new VerifiedMessage(destination, identityKey, verifiedState));
+        if (verified.getState() == Verified.State.DEFAULT) {
+          verifiedState = VerifiedState.DEFAULT;
+        } else if (verified.getState() == Verified.State.VERIFIED) {
+          verifiedState = VerifiedState.VERIFIED;
+        } else if (verified.getState() == Verified.State.UNVERIFIED) {
+          verifiedState = VerifiedState.UNVERIFIED;
+        } else {
+          throw new InvalidMessageException("Unknown state: " + verified.getState().getNumber());
         }
 
-        return SignalServiceSyncMessage.forVerified(verifiedMessages);
+        return SignalServiceSyncMessage.forVerified(new VerifiedMessage(destination, identityKey, verifiedState, System.currentTimeMillis()));
       } catch (InvalidKeyException e) {
         throw new InvalidMessageException(e);
       }
