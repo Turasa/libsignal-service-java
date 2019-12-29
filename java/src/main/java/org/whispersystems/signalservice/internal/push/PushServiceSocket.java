@@ -17,6 +17,7 @@ import org.whispersystems.libsignal.state.PreKeyRecord;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 import org.whispersystems.libsignal.util.Pair;
 import org.whispersystems.libsignal.util.guava.Optional;
+import org.whispersystems.signalservice.api.crypto.AttachmentCipherOutputStream;
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment.ProgressListener;
 import org.whispersystems.signalservice.api.messages.calls.TurnServerInfo;
@@ -45,6 +46,7 @@ import org.whispersystems.signalservice.internal.contacts.entities.RemoteAttesta
 import org.whispersystems.signalservice.internal.contacts.entities.RemoteAttestationResponse;
 import org.whispersystems.signalservice.internal.push.exceptions.MismatchedDevicesException;
 import org.whispersystems.signalservice.internal.push.exceptions.StaleDevicesException;
+import org.whispersystems.signalservice.internal.push.http.AttachmentCipherOutputStreamFactory;
 import org.whispersystems.signalservice.internal.push.http.DigestingRequestBody;
 import org.whispersystems.signalservice.internal.push.http.OutputStreamFactory;
 import org.whispersystems.signalservice.internal.util.BlacklistingTrustManager;
@@ -129,6 +131,7 @@ public class PushServiceSocket {
   private static final String SENDER_ACK_MESSAGE_PATH   = "/v1/messages/%s/%d";
   private static final String UUID_ACK_MESSAGE_PATH     = "/v1/messages/uuid/%s";
   private static final String ATTACHMENT_PATH           = "/v2/attachments/form/upload";
+  private static final String STICKER_UPLOAD_PATH       = "/v1/sticker/pack/form/%d";
 
   private static final String PROFILE_PATH              = "/v1/profile/%s";
 
@@ -653,6 +656,16 @@ public class PushServiceSocket {
     }
   }
 
+  public StickerUploadAttributesResponse getStickerUploadAttributes(int stickerCount) throws NonSuccessfulResponseCodeException, PushNetworkException {
+    String response = makeServiceRequest(String.format(STICKER_UPLOAD_PATH, stickerCount), "GET", null);
+    try {
+      return JsonUtil.fromJson(response, StickerUploadAttributesResponse.class);
+    } catch (IOException e) {
+      Log.w(TAG, e);
+      throw new NonSuccessfulResponseCodeException("Unable to parse entity");
+    }
+  }
+
   public Pair<Long, byte[]> uploadAttachment(PushAttachmentData attachment, AttachmentUploadAttributes uploadAttributes)
       throws PushNetworkException, NonSuccessfulResponseCodeException
   {
@@ -665,6 +678,24 @@ public class PushServiceSocket {
                                 attachment.getOutputStreamFactory(), attachment.getListener());
 
     return new Pair<>(id, digest);
+  }
+
+  public void uploadStickerContent(InputStream content,long length, byte[] expandedPackKey, StickerUploadAttributes uploadAttributes)
+      throws NonSuccessfulResponseCodeException, PushNetworkException
+  {
+    uploadToCdn("",
+                uploadAttributes.getAcl(),
+                uploadAttributes.getKey(),
+                uploadAttributes.getPolicy(),
+                uploadAttributes.getAlgorithm(),
+                uploadAttributes.getCredential(),
+                uploadAttributes.getDate(),
+                uploadAttributes.getSignature(),
+                content,
+                "application/octet-stream",
+                AttachmentCipherOutputStream.getCiphertextLength(length),
+                new AttachmentCipherOutputStreamFactory(expandedPackKey),
+                null);
   }
 
   private void downloadFromCdn(File destination, String path, int maxSizeBytes, ProgressListener listener)

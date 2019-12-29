@@ -11,6 +11,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.whispersystems.libsignal.InvalidKeyException;
 import org.whispersystems.libsignal.SessionBuilder;
 import org.whispersystems.libsignal.SignalProtocolAddress;
+import org.whispersystems.libsignal.kdf.HKDFv3;
 import org.whispersystems.libsignal.logging.Log;
 import org.whispersystems.libsignal.state.PreKeyBundle;
 import org.whispersystems.libsignal.state.SignalProtocolStore;
@@ -21,14 +22,7 @@ import org.whispersystems.signalservice.api.crypto.SignalServiceCipher;
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess;
 import org.whispersystems.signalservice.api.crypto.UnidentifiedAccessPair;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
-import org.whispersystems.signalservice.api.messages.SendMessageResult;
-import org.whispersystems.signalservice.api.messages.SignalServiceAttachment;
-import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentPointer;
-import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream;
-import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
-import org.whispersystems.signalservice.api.messages.SignalServiceGroup;
-import org.whispersystems.signalservice.api.messages.SignalServiceReceiptMessage;
-import org.whispersystems.signalservice.api.messages.SignalServiceTypingMessage;
+import org.whispersystems.signalservice.api.messages.*;
 import org.whispersystems.signalservice.api.messages.calls.AnswerMessage;
 import org.whispersystems.signalservice.api.messages.calls.IceUpdateMessage;
 import org.whispersystems.signalservice.api.messages.calls.OfferMessage;
@@ -45,19 +39,14 @@ import org.whispersystems.signalservice.api.messages.multidevice.ViewOnceOpenMes
 import org.whispersystems.signalservice.api.messages.shared.SharedContact;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException;
+import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.push.exceptions.UnregisteredUserException;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 import org.whispersystems.signalservice.internal.crypto.PaddingInputStream;
-import org.whispersystems.signalservice.internal.push.AttachmentUploadAttributes;
-import org.whispersystems.signalservice.internal.push.MismatchedDevices;
-import org.whispersystems.signalservice.internal.push.OutgoingPushMessage;
-import org.whispersystems.signalservice.internal.push.OutgoingPushMessageList;
+import org.whispersystems.signalservice.internal.push.*;
 import org.whispersystems.signalservice.internal.push.ProvisioningProtos;
-import org.whispersystems.signalservice.internal.push.PushAttachmentData;
-import org.whispersystems.signalservice.internal.push.PushServiceSocket;
-import org.whispersystems.signalservice.internal.push.SendMessageResponse;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.AttachmentPointer;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.CallMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Content;
@@ -68,22 +57,19 @@ import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Receip
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.SyncMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.TypingMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Verified;
-import org.whispersystems.signalservice.internal.push.StaleDevices;
 import org.whispersystems.signalservice.internal.push.exceptions.MismatchedDevicesException;
 import org.whispersystems.signalservice.internal.push.exceptions.StaleDevicesException;
 import org.whispersystems.signalservice.internal.push.http.AttachmentCipherOutputStreamFactory;
+import org.whispersystems.signalservice.internal.sticker.StickerProtos;
 import org.whispersystems.signalservice.internal.util.StaticCredentialsProvider;
 import org.whispersystems.signalservice.internal.util.Util;
 import org.whispersystems.util.Base64;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -401,6 +387,29 @@ public class SignalServiceMessageSender {
                                               attachment.getVoiceNote(),
                                               attachment.getCaption(),
                                               attachment.getBlurHash());
+  }
+
+  public Pair<byte[], StickerUploadAttributesResponse> getStickerUploadAttributes(int stickerCount) throws IOException {
+    return new Pair<>(Util.getSecretBytes(32), socket.getStickerUploadAttributes(stickerCount));
+  }
+
+  public void uploadStickerManifest(SignalServiceStickerManifest manifest, byte[] packKey, StickerUploadAttributes manifestUploadAttributes)
+      throws NonSuccessfulResponseCodeException, PushNetworkException
+  {
+    if (manifest.getStickers().isEmpty()) {
+      throw new AssertionError("Must have stickers!");
+    }
+
+    byte[] content     = createStickerManifestContent(manifest);
+    byte[] expandedKey = new HKDFv3().deriveSecrets(packKey, "Sticker Pack".getBytes(), 64);
+    socket.uploadStickerContent(new ByteArrayInputStream(content), content.length, expandedKey, manifestUploadAttributes);
+  }
+
+  public void uploadSticker(InputStream data, long length, byte[] packKey, StickerUploadAttributes stickerUploadAttributes)
+      throws NonSuccessfulResponseCodeException, PushNetworkException
+  {
+    byte[] expandedKey = new HKDFv3().deriveSecrets(packKey, "Sticker Pack".getBytes(), 64);
+    socket.uploadStickerContent(data, length, expandedKey, stickerUploadAttributes);
   }
 
 
@@ -1017,6 +1026,37 @@ public class SignalServiceMessageSender {
     }
 
     return results;
+  }
+
+  private byte[] createStickerManifestContent(SignalServiceStickerManifest manifest) {
+    List<StickerProtos.Pack.Sticker> stickers = new ArrayList<>();
+
+    for (SignalServiceStickerManifest.StickerInfo sticker : manifest.getStickers()) {
+      stickers.add(StickerProtos.Pack.Sticker.newBuilder()
+                                             .setId(sticker.getId())
+                                             .setEmoji(sticker.getEmoji())
+                                             .build());
+    }
+
+
+    StickerProtos.Pack.Builder builder = StickerProtos.Pack.newBuilder().addAllStickers(stickers);
+
+    if (manifest.getTitle().isPresent()) {
+      builder.setTitle(manifest.getTitle().get());
+    }
+
+    if (manifest.getAuthor().isPresent()) {
+      builder.setAuthor(manifest.getAuthor().get());
+    }
+
+    if (manifest.getCover().isPresent()) {
+      builder.setCover(StickerProtos.Pack.Sticker.newBuilder()
+                                                 .setId(manifest.getCover().get().getId())
+                                                 .setEmoji(manifest.getCover().get().getEmoji())
+                                                 .build());
+    }
+
+    return builder.build().toByteArray();
   }
 
   private List<SendMessageResult> sendMessage(List<SignalServiceAddress>         recipients,
