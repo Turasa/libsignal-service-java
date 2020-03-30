@@ -436,8 +436,8 @@ public class SignalServiceMessageSender {
     if (manifest.getStickers().isEmpty()) {
       throw new AssertionError("Must have stickers!");
     }
-    if (packKey.length != 64) {
-      throw new AssertionError("Size of packKey must be 64!");
+    if (packKey.length != 32) {
+      throw new AssertionError("Size of packKey must be 32!");
     }
 
     int stickerCount = manifest.getStickers().size() + (manifest.getCover().isPresent() ? 1 : 0);
