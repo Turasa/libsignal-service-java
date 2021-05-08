@@ -12,6 +12,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AccountAttributes {
 
   @JsonProperty
+  private String  name;
+
+  @JsonProperty
   private String  signalingKey;
 
   @JsonProperty
@@ -44,6 +47,30 @@ public class AccountAttributes {
   @JsonProperty
   private Capabilities capabilities;
 
+  public AccountAttributes(String name,
+                           String signalingKey,
+                           int registrationId,
+                           boolean fetchesMessages,
+                           String pin,
+                           String registrationLock,
+                           byte[] unidentifiedAccessKey,
+                           boolean unrestrictedUnidentifiedAccess,
+                           Capabilities capabilities,
+                           boolean discoverableByPhoneNumber)
+  {
+    this(signalingKey,
+     registrationId,
+     fetchesMessages,
+     pin,
+     registrationLock,
+     unidentifiedAccessKey,
+     unrestrictedUnidentifiedAccess,
+     capabilities,
+     discoverableByPhoneNumber
+    );
+    this.name = name;
+  }
+
   public AccountAttributes(String signalingKey,
                            int registrationId,
                            boolean fetchesMessages,
@@ -68,6 +95,10 @@ public class AccountAttributes {
   }
 
   public AccountAttributes() {}
+
+  public String getName() {
+    return name;
+  }
 
   public String getSignalingKey() {
     return signalingKey;
