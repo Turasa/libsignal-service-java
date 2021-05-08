@@ -9,6 +9,7 @@ package org.whispersystems.signalservice.api;
 
 import com.google.protobuf.ByteString;
 
+import org.signal.zkgroup.InvalidInputException;
 import org.signal.zkgroup.profiles.ProfileKey;
 import org.signal.zkgroup.profiles.ProfileKeyCredential;
 import org.whispersystems.libsignal.IdentityKey;
@@ -24,7 +25,6 @@ import org.whispersystems.libsignal.util.ByteUtil;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.crypto.InvalidCiphertextException;
 import org.whispersystems.signalservice.api.crypto.ProfileCipher;
-import org.whispersystems.signalservice.api.crypto.ProfileCipherInputStream;
 import org.whispersystems.signalservice.api.crypto.ProfileCipherOutputStream;
 import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Api;
@@ -627,26 +627,21 @@ public class SignalServiceAccountManager {
   }
   
   /**
-   * Finishes a registration as a new device. Called by the new device.<br>
-   * This method blocks until the already verified device has verified this device.
+   * Gets info from the primary device to finish the registration as a new device.<br>
    * @param tempIdentity A temporary identity. Must be the same as the one given to the already verified device.
-   * @param supportsSms A boolean which indicates whether this device can receive SMS to the account's number.
-   * @param fetchesMessages A boolean which indicates whether this device fetches messages.
-   * @param registrationId A random integer generated at install time.
-   * @param deviceName A name for this device, not its user agent.
-   * @return Contains the account's permanent IdentityKeyPair and it's number along the deviceId given by the server.
-   * @throws TimeoutException
-   * @throws IOException
-   * @throws InvalidKeyException
+   * @return Contains the account's permanent IdentityKeyPair and it's number along with the provisioning code required to finish the registration.
    */
-  public NewDeviceRegistrationReturn finishNewDeviceRegistration(IdentityKeyPair tempIdentity, boolean supportsSms, boolean fetchesMessages, int registrationId, String deviceName) throws TimeoutException, IOException, InvalidKeyException {
+  public NewDeviceRegistrationReturn getNewDeviceRegistration(IdentityKeyPair tempIdentity) throws TimeoutException, IOException {
     ProvisionMessage msg = provisioningSocket.getProvisioningMessage(tempIdentity);
-    credentialsProvider.setE164(msg.getNumber());
-    UUID uuid = UuidUtil.parseOrNull(msg.getUuid());
+
+    final String number = msg.getNumber();
+    final UUID uuid = UuidUtil.parseOrNull(msg.getUuid());
+
+    credentialsProvider.setE164(number);
     // Not setting Uuid here, as that causes a 400 Bad Request
     // when calling the finishNewDeviceRegistration endpoint
     // credentialsProvider.setUuid(uuid);
-    String provisioningCode = msg.getProvisioningCode();
+
     byte[] publicKeyBytes = msg.getIdentityKeyPublic().toByteArray();
     if (publicKeyBytes.length == 32) {
       // The public key is missing the type specifier, probably from iOS
@@ -654,13 +649,49 @@ public class SignalServiceAccountManager {
       byte[] type = {Curve.DJB_TYPE};
       publicKeyBytes = ByteUtil.combine(type, publicKeyBytes);
     }
-    ECPublicKey publicKey = Curve.decodePoint(publicKeyBytes, 0);
+    final ECPublicKey publicKey;
+    try {
+      publicKey = Curve.decodePoint(publicKeyBytes, 0);
+    } catch (InvalidKeyException e) {
+      throw new IOException("Failed to decrypt public key", e);
+    }
     final byte[] privateKeyBytes = msg.getIdentityKeyPrivate().toByteArray();
-    ECPrivateKey privateKey = Curve.decodePrivatePoint(privateKeyBytes);
-    IdentityKeyPair identity = new IdentityKeyPair(new IdentityKey(publicKey), privateKey);
-    int deviceId = this.pushServiceSocket.finishNewDeviceRegistration(provisioningCode, supportsSms, fetchesMessages, registrationId, deviceName);
+    final ECPrivateKey privateKey = Curve.decodePrivatePoint(privateKeyBytes);
+    final IdentityKeyPair identity = new IdentityKeyPair(new IdentityKey(publicKey), privateKey);
+
+    final ProfileKey profileKey;
+    try {
+      profileKey = msg.hasProfileKey() ? new ProfileKey(msg.getProfileKey().toByteArray()) : null;
+    } catch (InvalidInputException e) {
+      throw new IOException("Failed to decrypt profile key", e);
+    }
+
+    final String provisioningCode = msg.getProvisioningCode();
+    final boolean readReceipts = msg.hasReadReceipts() && msg.getReadReceipts();
+
+    return new NewDeviceRegistrationReturn(
+        provisioningCode, identity,
+        number,
+        uuid,
+        profileKey,
+        readReceipts
+    );
+  }
+
+  /**
+   * Finishes a registration as a new device. Called by the new device.<br>
+   * This method blocks until the already verified device has verified this device.
+   * @param provisioningCode The provisioning code from the getNewDeviceRegistration method
+   * @param supportsSms A boolean which indicates whether this device can receive SMS to the account's number.
+   * @param fetchesMessages A boolean which indicates whether this device fetches messages.
+   * @param registrationId A random integer generated at install time.
+   * @param deviceName A name for this device, not its user agent.
+   * @return The deviceId given by the server.
+   */
+  public int finishNewDeviceRegistration(String provisioningCode, boolean supportsSms, boolean fetchesMessages, int registrationId, String deviceName) throws IOException {
+    int    deviceId = this.pushServiceSocket.finishNewDeviceRegistration(provisioningCode, supportsSms, fetchesMessages, registrationId, deviceName);
     credentialsProvider.setDeviceId(deviceId);
-    return new NewDeviceRegistrationReturn(identity, deviceId, msg.getNumber(), uuid, msg.hasProfileKey() ? msg.getProfileKey().toByteArray() : null, msg.hasReadReceipts() && msg.getReadReceipts());
+    return deviceId;
   }
 
   public void addDevice(String deviceIdentifier,
@@ -813,23 +844,30 @@ public class SignalServiceAccountManager {
   }
 
   /**
-   * Helper class for holding the returns of finishNewDeviceRegistration()
+   * Helper class for holding the returns of getNewDeviceRegistration()
    */
   public static class NewDeviceRegistrationReturn {
+    private final String          provisioningCode;
     private final IdentityKeyPair identity;
-    private final int             deviceId;
     private final String          number;
     private final UUID            uuid;
-    private final byte[]          profileKey;
+    private final ProfileKey      profileKey;
     private final boolean         readReceipts;
 
-    NewDeviceRegistrationReturn(IdentityKeyPair identity, int deviceId, String number, UUID uuid, byte[] profileKey, boolean readReceipts) {
-      this.identity     = identity;
-      this.deviceId     = deviceId;
-      this.number       = number;
-      this.uuid         = uuid;
-      this.profileKey   = profileKey;
-      this.readReceipts = readReceipts;
+    NewDeviceRegistrationReturn(String provisioningCode, IdentityKeyPair identity, String number, UUID uuid, ProfileKey profileKey, boolean readReceipts) {
+      this.provisioningCode = provisioningCode;
+      this.identity         = identity;
+      this.number           = number;
+      this.uuid             = uuid;
+      this.profileKey       = profileKey;
+      this.readReceipts     = readReceipts;
+    }
+
+    /**
+     * @return The provisioning code to finish the new device registration
+     */
+    public String getProvisioningCode() {
+      return provisioningCode;
     }
 
     /**
@@ -837,13 +875,6 @@ public class SignalServiceAccountManager {
      */
     public IdentityKeyPair getIdentity() {
       return identity;
-    }
-
-    /**
-     * @return The deviceId for this device given by the server
-     */
-    public int getDeviceId() {
-      return deviceId;
     }
 
     /**
@@ -863,7 +894,7 @@ public class SignalServiceAccountManager {
     /**
      * @return The account's profile key or null
      */
-    public byte[] getProfileKey() {
+    public ProfileKey getProfileKey() {
       return profileKey;
     }
 
