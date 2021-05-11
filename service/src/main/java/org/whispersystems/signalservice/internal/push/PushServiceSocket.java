@@ -43,6 +43,7 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.calls.CallingResponse;
 import org.whispersystems.signalservice.api.messages.calls.TurnServerInfo;
 import org.whispersystems.signalservice.api.messages.multidevice.DeviceInfo;
+import org.whispersystems.signalservice.api.payments.CurrencyConversions;
 import org.whispersystems.signalservice.api.profiles.ProfileAndCredential;
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfile;
 import org.whispersystems.signalservice.api.profiles.SignalServiceProfileWrite;
@@ -60,6 +61,7 @@ import org.whispersystems.signalservice.api.push.exceptions.MissingConfiguration
 import org.whispersystems.signalservice.api.push.exceptions.NoContentException;
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.NotFoundException;
+import org.whispersystems.signalservice.api.push.exceptions.ProofRequiredException;
 import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.push.exceptions.RangeException;
 import org.whispersystems.signalservice.api.push.exceptions.RateLimitException;
@@ -89,6 +91,7 @@ import org.whispersystems.signalservice.internal.push.exceptions.GroupNotFoundEx
 import org.whispersystems.signalservice.internal.push.exceptions.GroupPatchNotAcceptedException;
 import org.whispersystems.signalservice.internal.push.exceptions.MismatchedDevicesException;
 import org.whispersystems.signalservice.internal.push.exceptions.NotInGroupException;
+import org.whispersystems.signalservice.internal.push.exceptions.PaymentsRegionException;
 import org.whispersystems.signalservice.internal.push.exceptions.StaleDevicesException;
 import org.whispersystems.signalservice.internal.push.http.CancelationSignal;
 import org.whispersystems.signalservice.internal.push.http.DigestingRequestBody;
@@ -133,7 +136,6 @@ import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -198,6 +200,8 @@ public class PushServiceSocket {
   private static final String ATTACHMENT_V3_PATH        = "/v3/attachments/form/upload";
   private static final String STICKER_UPLOAD_PATH       = "/v1/sticker/pack/form/%d";
 
+  private static final String PAYMENTS_AUTH_PATH        = "/v1/payments/auth";
+
   private static final String PROFILE_PATH              = "/v1/profile/%s";
   private static final String PROFILE_USERNAME_PATH     = "/v1/profile/username/%s";
 
@@ -221,6 +225,11 @@ public class PushServiceSocket {
   private static final String GROUPSV2_AVATAR_REQUEST   = "/v1/groups/avatar/form";
   private static final String GROUPSV2_GROUP_JOIN       = "/v1/groups/join/%s";
   private static final String GROUPSV2_TOKEN            = "/v1/groups/token";
+
+  private static final String PAYMENTS_CONVERSIONS      = "/v1/payments/conversions";
+
+  private static final String SUBMIT_RATE_LIMIT_CHALLENGE       = "/v1/challenge";
+  private static final String REQUEST_RATE_LIMIT_PUSH_CHALLENGE = "/v1/challenge/push";
 
   private static final String SERVER_DELIVERED_TIMESTAMP_HEADER = "X-Signal-Timestamp";
 
@@ -265,7 +274,7 @@ public class PushServiceSocket {
   }
 
   public void requestSmsVerificationCode(boolean androidSmsRetriever, Optional<String> captchaToken, Optional<String> challenge) throws IOException {
-    String path = String.format(CREATE_ACCOUNT_SMS_PATH, credentialsProvider.getE164(), androidSmsRetriever ? "android-2020-01" : "android");
+    String path = String.format(CREATE_ACCOUNT_SMS_PATH, credentialsProvider.getE164(), androidSmsRetriever ? "android-2021-03" : "android");
 
     if (captchaToken.isPresent()) {
       path += "&captcha=" + captchaToken.get();
@@ -732,7 +741,12 @@ public class PushServiceSocket {
     String                        requestBody    = JsonUtil.toJson(signalServiceProfileWrite);
     ProfileAvatarUploadAttributes formAttributes;
 
-    String response = makeServiceRequest(String.format(PROFILE_PATH, ""), "PUT", requestBody);
+    String response = makeServiceRequest(String.format(PROFILE_PATH, ""),
+                                         "PUT",
+                                         requestBody,
+                                         NO_HEADERS,
+                                         PaymentsRegionException::responseCodeHandler,
+                                         Optional.absent());
 
     if (signalServiceProfileWrite.hasAvatar() && profileAvatar != null) {
       try {
@@ -775,6 +789,20 @@ public class PushServiceSocket {
     makeServiceRequest(DELETE_ACCOUNT_PATH, "DELETE", null);
   }
 
+  public void requestRateLimitPushChallenge() throws IOException {
+    makeServiceRequest(REQUEST_RATE_LIMIT_PUSH_CHALLENGE, "POST", "");
+  }
+
+  public void submitRateLimitPushChallenge(String challenge) throws IOException {
+    String payload = JsonUtil.toJson(new SubmitPushChallengePayload(challenge));
+    makeServiceRequest(SUBMIT_RATE_LIMIT_CHALLENGE, "PUT", payload);
+  }
+
+  public void submitRateLimitRecaptchaChallenge(String challenge, String recaptchaToken) throws IOException {
+    String payload = JsonUtil.toJson(new SubmitRecaptchaChallengePayload(challenge, recaptchaToken));
+    makeServiceRequest(SUBMIT_RATE_LIMIT_CHALLENGE, "PUT", payload);
+  }
+
   public List<ContactTokenDetails> retrieveDirectory(Set<String> contactTokens)
       throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException
   {
@@ -799,10 +827,14 @@ public class PushServiceSocket {
     }
   }
 
-  private String getCredentials(String authPath) throws IOException {
+  private AuthCredentials getAuthCredentials(String authPath) throws IOException {
     String              response = makeServiceRequest(authPath, "GET", null, NO_HEADERS);
     AuthCredentials     token    = JsonUtil.fromJson(response, AuthCredentials.class);
-    return token.asBasic();
+    return token;
+  }
+
+  private String getCredentials(String authPath) throws IOException {
+    return getAuthCredentials(authPath).asBasic();
   }
 
   public String getContactDiscoveryAuthorization() throws IOException {
@@ -811,6 +843,10 @@ public class PushServiceSocket {
 
   public String getKeyBackupServiceAuthorization() throws IOException {
     return getCredentials(KBS_AUTH_PATH);
+  }
+
+  public AuthCredentials getPaymentsAuthorization() throws IOException {
+    return getAuthCredentials(PAYMENTS_AUTH_PATH);
   }
 
   public TokenResponse getKeyBackupServiceToken(String authorizationToken, String enclaveName)
@@ -1494,6 +1530,13 @@ public class PushServiceSocket {
         throw new LockedException(accountLockFailure.length,
                                   accountLockFailure.timeRemaining,
                                   basicStorageCredentials);
+      case 428:
+        ProofRequiredResponse proofRequiredResponse = readResponseJson(response, ProofRequiredResponse.class);
+        String                retryAfterRaw = response.header("Retry-After");
+        long                  retryAfter    = Util.parseInt(retryAfterRaw, -1);
+
+        throw new ProofRequiredException(proofRequiredResponse, retryAfter);
+
       case 499:
         throw new DeprecatedVersionException();
 
@@ -2179,6 +2222,18 @@ public class PushServiceSocket {
                                                NO_HANDLER);
 
     return GroupExternalCredential.parseFrom(readBodyBytes(response));
+  }
+
+  public CurrencyConversions getCurrencyConversions()
+      throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException
+  {
+    String response = makeServiceRequest(PAYMENTS_CONVERSIONS, "GET", null);
+    try {
+      return JsonUtil.fromJson(response, CurrencyConversions.class);
+    } catch (IOException e) {
+      Log.w(TAG, e);
+      throw new MalformedResponseException("Unable to parse entity", e);
+    }
   }
 
   public static final class GroupHistory {
