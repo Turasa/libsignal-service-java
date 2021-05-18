@@ -28,7 +28,7 @@ public class ProvisioningSocket {
     // TODO should probably make this random, like in PushServiceSocket
     // TODO pass dns and proxy as well
     SignalServiceUrl[] serviceUrls = signalServiceConfiguration.getSignalServiceUrls();
-    connection = new WebSocketConnection(serviceUrls[0].getUrl(), serviceUrls[0].getTrustStore(), userAgent, null, timer, signalServiceConfiguration.getNetworkInterceptors(), Optional.absent(), Optional.absent());
+    connection = new WebSocketConnection(serviceUrls[0], userAgent, null, timer, signalServiceConfiguration.getNetworkInterceptors(), Optional.absent(), Optional.absent());
   }
 
   public ProvisioningUuid getProvisioningUuid() throws TimeoutException, IOException {
