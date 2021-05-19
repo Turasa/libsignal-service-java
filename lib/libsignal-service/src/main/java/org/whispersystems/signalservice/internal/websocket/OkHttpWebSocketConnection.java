@@ -77,6 +77,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
   private final String                                    extraPathUri;
   private final SecureRandom                              random;
 
+  private OkHttpClient okHttpClient;
   private WebSocket client;
 
   public OkHttpWebSocketConnection(String name,
@@ -149,7 +150,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
         clientBuilder.socketFactory(new TlsProxySocketFactory(signalProxy.get().getHost(), signalProxy.get().getPort(), dns));
       }
 
-      OkHttpClient okHttpClient = clientBuilder.build();
+      okHttpClient = clientBuilder.build();
 
       Request.Builder requestBuilder = new Request.Builder().url(wsUri);
 
@@ -192,6 +193,7 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
       client.close(1000, "OK");
       client = null;
       webSocketState.onNext(WebSocketConnectionState.DISCONNECTING);
+      okHttpClient.dispatcher().executorService().shutdown();
     }
 
     notifyAll();
@@ -347,6 +349,11 @@ public class OkHttpWebSocketConnection extends WebSocketListener implements WebS
     }
 
     cleanupAfterShutdown(response != null ? response.code() : 1000);
+
+    if (okHttpClient != null ) {
+      okHttpClient.dispatcher().executorService().shutdown();
+      okHttpClient = null;
+    }
 
     notifyAll();
   }
