@@ -11,9 +11,13 @@ plugins {
   id("org.jetbrains.kotlin.jvm")
   id("org.jlleitschuh.gradle.ktlint")
   id("com.squareup.wire")
+  id("maven-publish")
+  id("signing")
 }
 
 java {
+  withJavadocJar()
+  withSourcesJar()
   sourceCompatibility = signalJavaVersion
   targetCompatibility = signalJavaVersion
 }
@@ -27,7 +31,8 @@ kotlin {
 afterEvaluate {
   listOf(
     "runKtlintCheckOverMainSourceSet",
-    "runKtlintFormatOverMainSourceSet"
+    "runKtlintFormatOverMainSourceSet",
+    "sourcesJar"
   ).forEach { taskName ->
     tasks.named(taskName) {
       mustRunAfter(tasks.named("generateMainProtos"))
@@ -54,4 +59,45 @@ dependencies {
   testImplementation(testLibs.assertj.core)
   testImplementation(testLibs.junit.junit)
   testImplementation(testLibs.kotlinx.coroutines.test)
+}
+
+publishing {
+  publications {
+    create<MavenPublication>("mavenJava") {
+      from(components["java"])
+
+      pom {
+        name.set("core-util-jvm")
+        description.set("Signal Service communication library for Java, unofficial fork")
+        url.set("https://github.com/Turasa/libsignal-service-java")
+        licenses {
+          license {
+            name.set("GPLv3")
+            url.set("https://www.gnu.org/licenses/gpl-3.0.txt")
+          }
+        }
+        developers {
+          developer {
+            name.set("Moxie Marlinspike")
+          }
+          developer {
+            name.set("Sebastian Scheibner")
+          }
+          developer {
+            name.set("Tilman Hoffbauer")
+          }
+        }
+        scm {
+          connection.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+          developerConnection.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+          url.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+        }
+      }
+    }
+  }
+}
+
+signing {
+  isRequired = gradle.taskGraph.hasTask("uploadArchives")
+  sign(publishing.publications["mavenJava"])
 }
