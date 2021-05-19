@@ -7,6 +7,7 @@
 package org.whispersystems.signalservice.internal.util;
 
 import org.whispersystems.signalservice.api.push.ACI;
+import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
 
 public class StaticCredentialsProvider implements CredentialsProvider {
@@ -14,11 +15,17 @@ public class StaticCredentialsProvider implements CredentialsProvider {
   private final ACI    aci;
   private final String e164;
   private final String password;
+  private final int    deviceId;
 
   public StaticCredentialsProvider(ACI aci, String e164, String password) {
+    this(aci, e164, password, SignalServiceAddress.DEFAULT_DEVICE_ID);
+  }
+
+  public StaticCredentialsProvider(ACI aci, String e164, String password, int deviceId) {
     this.aci      = aci;
     this.e164     = e164;
     this.password = password;
+    this.deviceId = deviceId;
   }
 
   @Override
@@ -34,5 +41,10 @@ public class StaticCredentialsProvider implements CredentialsProvider {
   @Override
   public String getPassword() {
     return password;
+  }
+
+  @Override
+  public int getDeviceId() {
+    return deviceId;
   }
 }

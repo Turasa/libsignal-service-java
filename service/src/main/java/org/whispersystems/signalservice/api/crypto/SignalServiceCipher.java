@@ -49,7 +49,6 @@ import org.whispersystems.signalservice.api.messages.SignalServiceMetadata;
 import org.whispersystems.signalservice.api.push.ACI;
 import org.whispersystems.signalservice.api.push.DistributionId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
-import org.whispersystems.signalservice.api.util.UuidUtil;
 import org.whispersystems.signalservice.internal.push.OutgoingPushMessage;
 import org.whispersystems.signalservice.internal.push.PushTransportDetails;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos;
@@ -71,9 +70,11 @@ public class SignalServiceCipher {
   private final SignalProtocolStore  signalProtocolStore;
   private final SignalSessionLock    sessionLock;
   private final SignalServiceAddress localAddress;
+  private final int                  localDeviceId;
   private final CertificateValidator certificateValidator;
 
   public SignalServiceCipher(SignalServiceAddress localAddress,
+                             int localDeviceId,
                              SignalProtocolStore signalProtocolStore,
                              SignalSessionLock sessionLock,
                              CertificateValidator certificateValidator)
@@ -81,6 +82,7 @@ public class SignalServiceCipher {
     this.signalProtocolStore  = signalProtocolStore;
     this.sessionLock          = sessionLock;
     this.localAddress         = localAddress;
+    this.localDeviceId        = localDeviceId;
     this.certificateValidator = certificateValidator;
   }
 
@@ -93,7 +95,7 @@ public class SignalServiceCipher {
       throws NoSessionException, UntrustedIdentityException, InvalidKeyException, InvalidRegistrationIdException
   {
     PushTransportDetails             transport            = new PushTransportDetails();
-    SignalProtocolAddress            localProtocolAddress = new SignalProtocolAddress(localAddress.getIdentifier(), SignalServiceAddress.DEFAULT_DEVICE_ID);
+    SignalProtocolAddress            localProtocolAddress = new SignalProtocolAddress(localAddress.getIdentifier(), localDeviceId);
     SignalGroupCipher                groupCipher          = new SignalGroupCipher(sessionLock, new GroupCipher(signalProtocolStore, localProtocolAddress));
     SignalSealedSessionCipher        sessionCipher        = new SignalSealedSessionCipher(sessionLock, new SealedSessionCipher(signalProtocolStore, localAddress.getAci().uuid(), localAddress.getNumber().orNull(), 1));
     CiphertextMessage                message              = groupCipher.encrypt(distributionId.asUuid(), transport.getPaddedMessageBody(unpaddedMessage));
@@ -198,7 +200,7 @@ public class SignalServiceCipher {
         paddedMessage = sessionCipher.decrypt(new SignalMessage(ciphertext));
         metadata      = new SignalServiceMetadata(envelope.getSourceAddress(), envelope.getSourceDevice(), envelope.getTimestamp(), envelope.getServerReceivedTimestamp(), envelope.getServerDeliveredTimestamp(), false, envelope.getServerGuid(), Optional.absent());
       } else if (envelope.isUnidentifiedSender()) {
-        SignalSealedSessionCipher sealedSessionCipher = new SignalSealedSessionCipher(sessionLock, new SealedSessionCipher(signalProtocolStore, localAddress.getAci().uuid(), localAddress.getNumber().orNull(), SignalServiceAddress.DEFAULT_DEVICE_ID));
+        SignalSealedSessionCipher sealedSessionCipher = new SignalSealedSessionCipher(sessionLock, new SealedSessionCipher(signalProtocolStore, localAddress.getAci().uuid(), localAddress.getNumber().orNull(), localDeviceId));
         DecryptionResult          result              = sealedSessionCipher.decrypt(certificateValidator, ciphertext, envelope.getServerReceivedTimestamp());
         SignalServiceAddress      resultAddress       = new SignalServiceAddress(ACI.parseOrThrow(result.getSenderUuid()), result.getSenderE164());
         Optional<byte[]>          groupId             = result.getGroupId();
