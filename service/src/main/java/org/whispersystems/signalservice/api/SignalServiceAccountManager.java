@@ -129,7 +129,6 @@ public class SignalServiceAccountManager {
 
   private final PushServiceSocket          pushServiceSocket;
   private final CredentialsProvider        credentials;
-  private final String                     userAgent;
   private final GroupsV2Operations         groupsV2Operations;
   private final SignalServiceConfiguration configuration;
 
@@ -168,7 +167,17 @@ public class SignalServiceAccountManager {
     this.groupsV2Operations = groupsV2Operations;
     this.pushServiceSocket  = new PushServiceSocket(configuration, credentialsProvider, signalAgent, groupsV2Operations.getProfileOperations(), automaticNetworkRetry);
     this.credentials        = credentialsProvider;
-    this.userAgent          = signalAgent;
+    this.configuration      = configuration;
+  }
+
+  public SignalServiceAccountManager(PushServiceSocket pushServiceSocket,
+                                     SignalServiceConfiguration configuration,
+                                     CredentialsProvider credentialsProvider,
+                                     GroupsV2Operations groupsV2Operations)
+  {
+    this.pushServiceSocket  = pushServiceSocket;
+    this.groupsV2Operations = groupsV2Operations;
+    this.credentials        = credentialsProvider;
     this.configuration      = configuration;
   }
 
