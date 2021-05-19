@@ -192,7 +192,20 @@ public class SignalServiceMessageSender {
                                     long maxEnvelopeSize,
                                     boolean automaticNetworkRetry)
   {
-    this.socket            = new PushServiceSocket(urls, credentialsProvider, signalAgent, clientZkProfileOperations, automaticNetworkRetry);
+    this(credentialsProvider, store, sessionLock, signalWebSocket, eventListener, executor, maxEnvelopeSize,
+         new PushServiceSocket(urls, credentialsProvider, signalAgent, clientZkProfileOperations, automaticNetworkRetry));
+  }
+
+  public SignalServiceMessageSender(CredentialsProvider credentialsProvider,
+                                    SignalServiceDataStore store,
+                                    SignalSessionLock sessionLock,
+                                    SignalWebSocket signalWebSocket,
+                                    Optional<EventListener> eventListener,
+                                    ExecutorService executor,
+                                    long maxEnvelopeSize,
+                                    PushServiceSocket pushServiceSocket)
+  {
+    this.socket            = pushServiceSocket;
     this.aciStore          = store.aci();
     this.sessionLock       = sessionLock;
     this.localAddress      = new SignalServiceAddress(credentialsProvider.getAci(), credentialsProvider.getE164());
