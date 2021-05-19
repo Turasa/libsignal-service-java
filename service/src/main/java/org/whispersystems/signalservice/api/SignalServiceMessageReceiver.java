@@ -216,6 +216,7 @@ public class SignalServiceMessageReceiver {
                                              entity.getServerUuid(),
                                              entity.getDestinationUuid(),
                                              entity.isUrgent(),
+                                             entity.getUpdatedPni(),
                                              entity.isStory());
       } else {
         envelope = new SignalServiceEnvelope(entity.getType(),
@@ -226,6 +227,7 @@ public class SignalServiceMessageReceiver {
                                              entity.getServerUuid(),
                                              entity.getDestinationUuid(),
                                              entity.isUrgent(),
+                                             entity.getUpdatedPni(),
                                              entity.isStory());
       }
 
