@@ -13,6 +13,7 @@ import org.whispersystems.signalservice.api.util.Tls12SocketFactory;
 import org.whispersystems.signalservice.api.util.TlsProxySocketFactory;
 import org.whispersystems.signalservice.api.websocket.ConnectivityListener;
 import org.whispersystems.signalservice.internal.configuration.SignalProxy;
+import org.whispersystems.signalservice.internal.configuration.SignalServiceUrl;
 import org.whispersystems.signalservice.internal.util.BlacklistingTrustManager;
 import org.whispersystems.signalservice.internal.util.Util;
 import org.whispersystems.signalservice.internal.util.concurrent.ListenableFuture;
@@ -59,7 +60,7 @@ public class WebSocketConnection extends WebSocketListener {
   private final Map<Long, OutgoingRequest> outgoingRequests = new HashMap<>();
 
   private final String                        wsUri;
-  private final TrustStore                    trustStore;
+  private final SignalServiceUrl              signalServiceUrl;
   private final Optional<CredentialsProvider> credentialsProvider;
   private final String                        signalAgent;
   private final ConnectivityListener          listener;
@@ -74,8 +75,7 @@ public class WebSocketConnection extends WebSocketListener {
   private int                 attempts;
   private boolean             connected;
 
-  public WebSocketConnection(String httpUri,
-                             TrustStore trustStore,
+  public WebSocketConnection(SignalServiceUrl signalServiceUrl,
                              Optional<CredentialsProvider> credentialsProvider,
                              String signalAgent,
                              ConnectivityListener listener,
@@ -84,7 +84,7 @@ public class WebSocketConnection extends WebSocketListener {
                              Optional<Dns> dns,
                              Optional<SignalProxy> signalProxy)
   {
-    this.trustStore          = trustStore;
+    this.signalServiceUrl    = signalServiceUrl;
     this.credentialsProvider = credentialsProvider;
     this.signalAgent         = signalAgent;
     this.listener            = listener;
@@ -95,16 +95,16 @@ public class WebSocketConnection extends WebSocketListener {
     this.attempts            = 0;
     this.connected           = false;
 
-    String uri = httpUri.replace("https://", "wss://").replace("http://", "ws://");
+    String uri = signalServiceUrl.getUrl().replace("https://", "wss://").replace("http://", "ws://");
 
     if (credentialsProvider.isPresent()) this.wsUri = uri + "/v1/websocket/?login=%s&password=%s";
     else                                 this.wsUri = uri + "/v1/websocket/";
   }
   
-  public WebSocketConnection(String httpUri, TrustStore trustStore, String signalAgent, ConnectivityListener listener,
+  public WebSocketConnection(SignalServiceUrl signalServiceUrl, String signalAgent, ConnectivityListener listener,
                              SleepTimer timer, List<Interceptor> interceptors, Optional<Dns> dns,
                              Optional<SignalProxy> signalProxy) {
-    this.trustStore          = trustStore;
+    this.signalServiceUrl    = signalServiceUrl;
     this.credentialsProvider = Optional.absent();
     this.signalAgent         = signalAgent;
     this.listener            = listener;
@@ -114,7 +114,7 @@ public class WebSocketConnection extends WebSocketListener {
     this.signalProxy         = signalProxy;
     this.attempts            = 0;
     this.connected           = false;
-    this.wsUri               = httpUri.replace("https://", "wss://")
+    this.wsUri               = signalServiceUrl.getUrl().replace("https://", "wss://")
                                       .replace("http://", "ws://") + "/v1/websocket/provisioning/";
   }
 
@@ -133,11 +133,11 @@ public class WebSocketConnection extends WebSocketListener {
       } else {
         filledUri = wsUri;
       }
-      Pair<SSLSocketFactory, X509TrustManager> socketFactory = createTlsSocketFactory(trustStore);
+      Pair<SSLSocketFactory, X509TrustManager> socketFactory = createTlsSocketFactory(signalServiceUrl.getTrustStore());
 
       OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
                                                            .sslSocketFactory(new Tls12SocketFactory(socketFactory.first()), socketFactory.second())
-                                                           .connectionSpecs(Util.immutableList(ConnectionSpec.RESTRICTED_TLS))
+                                                           .connectionSpecs(signalServiceUrl.getConnectionSpecs().or(Util.immutableList(ConnectionSpec.RESTRICTED_TLS)))
                                                            .readTimeout(KEEPALIVE_TIMEOUT_SECONDS + 10, TimeUnit.SECONDS)
                                                            .dns(dns.or(Dns.SYSTEM))
                                                            .connectTimeout(KEEPALIVE_TIMEOUT_SECONDS + 10, TimeUnit.SECONDS);
