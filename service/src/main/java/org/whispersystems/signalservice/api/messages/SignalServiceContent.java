@@ -884,6 +884,10 @@ public final class SignalServiceContent {
       return SignalServiceSyncMessage.forMessageRequestResponse(responseMessage);
     }
 
+    if (content.hasGroups()) {
+      return SignalServiceSyncMessage.forGroups(createAttachmentPointer(content.getGroups().getBlob()));
+    }
+
     if (content.hasOutgoingPayment()) {
       SignalServiceProtos.SyncMessage.OutgoingPayment outgoingPayment = content.getOutgoingPayment();
       switch (outgoingPayment.getPaymentDetailCase()) {
@@ -918,6 +922,10 @@ public final class SignalServiceContent {
 
     if (content.hasContacts()) {
       return SignalServiceSyncMessage.forContacts(new ContactsMessage(createAttachmentPointer(content.getContacts().getBlob()), content.getContacts().getComplete()));
+    }
+
+    if (content.hasPniIdentity()) {
+      return SignalServiceSyncMessage.forPniIdentity(content.getPniIdentity());
     }
 
     return SignalServiceSyncMessage.empty();
