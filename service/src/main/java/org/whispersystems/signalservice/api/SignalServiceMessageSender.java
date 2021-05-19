@@ -209,7 +209,7 @@ public class SignalServiceMessageSender {
     this.executor          = executor != null ? executor : Executors.newSingleThreadExecutor();
     this.maxEnvelopeSize   = maxEnvelopeSize;
     this.localPniIdentity  = store.pni().getIdentityKeyPair();
-    this.scheduler         = Schedulers.from(executor, false, false);
+    this.scheduler         = Schedulers.from(this.executor, false, false);
   }
 
   /**
