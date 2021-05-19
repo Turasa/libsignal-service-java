@@ -12,4 +12,5 @@ public interface CredentialsProvider {
   ACI getAci();
   String getE164();
   String getPassword();
+  public int getDeviceId();
 }
