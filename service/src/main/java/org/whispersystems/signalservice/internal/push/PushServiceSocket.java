@@ -120,6 +120,7 @@ import org.whispersystems.signalservice.internal.push.exceptions.GroupPatchNotAc
 import org.whispersystems.signalservice.internal.push.exceptions.GroupStaleDevicesException;
 import org.whispersystems.signalservice.internal.push.exceptions.InvalidUnidentifiedAccessHeaderException;
 import org.whispersystems.signalservice.internal.push.exceptions.MismatchedDevicesException;
+import org.whispersystems.signalservice.internal.push.exceptions.MissingCapabilitiesException;
 import org.whispersystems.signalservice.internal.push.exceptions.NotInGroupException;
 import org.whispersystems.signalservice.internal.push.exceptions.PaymentsRegionException;
 import org.whispersystems.signalservice.internal.push.exceptions.StaleDevicesException;
@@ -492,6 +493,17 @@ public class PushServiceSocket {
   {
     makeServiceRequest(SET_ACCOUNT_ATTRIBUTES, "PUT", JsonUtil.toJson(accountAttributes));
   }
+
+  public int finishNewDeviceRegistration(String code, ConfirmCodeMessage confirmCodeMessage) throws IOException {
+    String json = JsonUtil.toJson(confirmCodeMessage);
+    String responseText = makeServiceRequest(String.format(DEVICE_PATH, code), "PUT", json, NO_HEADERS, NEW_DEVICE_PUT_RESPONSE_HANDLER, Optional.empty());
+    DeviceId response = JsonUtil.fromJson(responseText, DeviceId.class);
+    return response.getDeviceId();
+  }
+
+  private static final ResponseCodeHandler NEW_DEVICE_PUT_RESPONSE_HANDLER = (responseCode, body) -> {
+    if (responseCode == 409) throw new MissingCapabilitiesException();
+  };
 
   public String getNewDeviceVerificationCode() throws IOException {
     String responseText = makeServiceRequest(PROVISIONING_CODE_PATH, "GET", null);
