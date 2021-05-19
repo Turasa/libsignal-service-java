@@ -26,6 +26,7 @@ import org.signal.storageservice.protos.groups.Member;
 import org.whispersystems.signalservice.api.NetworkResult;
 import org.whispersystems.signalservice.api.account.AccountAttributes;
 import org.whispersystems.signalservice.api.account.PreKeyCollection;
+import org.whispersystems.signalservice.api.crypto.AttachmentCipherStreamUtil;
 import org.whispersystems.signalservice.api.crypto.SealedSenderAccess;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2AuthorizationString;
 import org.whispersystems.signalservice.api.messages.AttachmentTransferProgress;
@@ -90,6 +91,7 @@ import org.whispersystems.signalservice.internal.push.http.DigestingRequestBody;
 import org.whispersystems.signalservice.internal.push.http.NoCipherOutputStreamFactory;
 import org.whispersystems.signalservice.internal.push.http.OutputStreamFactory;
 import org.whispersystems.signalservice.internal.push.http.ResumableUploadSpec;
+import org.whispersystems.signalservice.internal.push.http.StickerCipherOutputStreamFactory;
 import org.whispersystems.signalservice.internal.storage.protos.ReadOperation;
 import org.whispersystems.signalservice.internal.storage.protos.StorageItems;
 import org.whispersystems.signalservice.internal.storage.protos.StorageManifest;
@@ -160,6 +162,7 @@ public class PushServiceSocket implements Closeable {
   private static final String DEVICE_LINK_PATH          = "/v1/devices/link";
 
   private static final String GROUP_MESSAGE_PATH        = "/v1/messages/multi_recipient?ts=%s&online=%s&urgent=%s&story=%s";
+  private static final String STICKER_UPLOAD_PATH       = "/v1/sticker/pack/form/%d";
 
   private static final String ATTACHMENT_KEY_DOWNLOAD_PATH   = "attachments/%s";
   private static final String ATTACHMENT_ID_DOWNLOAD_PATH    = "attachments/%d";
@@ -580,6 +583,16 @@ public class PushServiceSocket implements Closeable {
     }
   }
 
+  public StickerUploadAttributesResponse getStickerUploadAttributes(int stickerCount) throws NonSuccessfulResponseCodeException, PushNetworkException, MalformedResponseException {
+    String response = makeServiceRequest(String.format(Locale.ROOT, STICKER_UPLOAD_PATH, stickerCount), "GET", null);
+    try {
+      return JsonUtil.fromJson(response, StickerUploadAttributesResponse.class);
+    } catch (IOException e) {
+      Log.w(TAG, e);
+      throw new MalformedResponseException("Unable to parse entity", e);
+    }
+  }
+
   public AttachmentDigest uploadGroupV2Avatar(byte[] avatarCipherText, AvatarUploadAttributes uploadAttributes)
       throws IOException
   {
@@ -629,6 +642,26 @@ public class PushServiceSocket implements Closeable {
                           attachment.getCancelationSignal(),
                           attachment.getResumableUploadSpec().getHeaders());
     }
+  }
+
+  public void uploadStickerContent(InputStream content,long length, byte[] expandedPackKey, StickerUploadAttributes uploadAttributes)
+      throws NonSuccessfulResponseCodeException, PushNetworkException
+  {
+    uploadToCdn0("",
+                 uploadAttributes.getAcl(),
+                 uploadAttributes.getKey(),
+                 uploadAttributes.getPolicy(),
+                 uploadAttributes.getAlgorithm(),
+                 uploadAttributes.getCredential(),
+                 uploadAttributes.getDate(),
+                 uploadAttributes.getSignature(),
+                 content,
+                 "application/octet-stream",
+                 AttachmentCipherStreamUtil.getCiphertextLength(length),
+                 false,
+                 new StickerCipherOutputStreamFactory(expandedPackKey),
+                 null,
+                 null);
   }
 
   private void downloadFromCdn(File destination, int cdnNumber, Map<String, String> headers, String path, long maxSizeBytes, ProgressListener listener)
