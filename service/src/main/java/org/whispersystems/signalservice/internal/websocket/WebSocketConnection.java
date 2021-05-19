@@ -66,6 +66,7 @@ public class WebSocketConnection extends WebSocketListener {
   private final String                                    name;
   private final String                                    wsUri;
   private final TrustStore                                trustStore;
+  private final Optional<List<ConnectionSpec>>            connectionSpecs;
   private final Optional<CredentialsProvider>             credentialsProvider;
   private final String                                    signalAgent;
   private final HealthMonitor                             healthMonitor;
@@ -85,6 +86,7 @@ public class WebSocketConnection extends WebSocketListener {
   {
     this.name                = "[" + name + ":" + System.identityHashCode(this) + "]";
     this.trustStore          = serviceConfiguration.getSignalServiceUrls()[0].getTrustStore();
+    this.connectionSpecs      = serviceConfiguration.getSignalServiceUrls()[0].getConnectionSpecs();
     this.credentialsProvider = credentialsProvider;
     this.signalAgent         = signalAgent;
     this.interceptors        = serviceConfiguration.getNetworkInterceptors();
@@ -123,7 +125,7 @@ public class WebSocketConnection extends WebSocketListener {
 
       OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder().sslSocketFactory(new Tls12SocketFactory(socketFactory.first()),
                                                                                        socketFactory.second())
-                                                                     .connectionSpecs(Util.immutableList(ConnectionSpec.RESTRICTED_TLS))
+                                                                     .connectionSpecs(connectionSpecs.or(Util.immutableList(ConnectionSpec.RESTRICTED_TLS)))
                                                                      .readTimeout(KEEPALIVE_TIMEOUT_SECONDS + 10, TimeUnit.SECONDS)
                                                                      .dns(dns.or(Dns.SYSTEM))
                                                                      .connectTimeout(KEEPALIVE_TIMEOUT_SECONDS + 10, TimeUnit.SECONDS);
