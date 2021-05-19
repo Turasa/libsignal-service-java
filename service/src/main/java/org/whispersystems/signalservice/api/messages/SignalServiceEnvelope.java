@@ -65,6 +65,7 @@ public class SignalServiceEnvelope {
                                String uuid,
                                String destinationUuid,
                                boolean urgent,
+                               String updatedPni,
                                boolean story)
   {
     Envelope.Builder builder = Envelope.newBuilder()
@@ -74,6 +75,7 @@ public class SignalServiceEnvelope {
                                        .setServerTimestamp(serverReceivedTimestamp)
                                        .setDestinationUuid(destinationUuid)
                                        .setUrgent(urgent)
+                                       .setUpdatedPni(updatedPni)
                                        .setStory(story);
 
     if (sender.isPresent()) {
@@ -100,6 +102,7 @@ public class SignalServiceEnvelope {
                                String uuid,
                                String destinationUuid,
                                boolean urgent,
+                               String updatedPni,
                                boolean story)
   {
     Envelope.Builder builder = Envelope.newBuilder()
@@ -108,6 +111,7 @@ public class SignalServiceEnvelope {
                                        .setServerTimestamp(serverReceivedTimestamp)
                                        .setDestinationUuid(destinationUuid)
                                        .setUrgent(urgent)
+                                       .setUpdatedPni(updatedPni)
                                        .setStory(story);
 
     if (uuid != null) {
@@ -249,6 +253,14 @@ public class SignalServiceEnvelope {
     return envelope.getUrgent();
   }
 
+  public boolean hasUpdatedPni() {
+    return envelope.hasUpdatedPni() && UuidUtil.isUuid(envelope.getUpdatedPni());
+  }
+
+  public String getUpdatedPni() {
+    return envelope.getUpdatedPni();
+  }
+
   public boolean isStory() {
     return envelope.getStory();
   }
@@ -308,6 +320,7 @@ public class SignalServiceEnvelope {
                                      proto.getServerGuid(),
                                      proto.getDestinationUuid(),
                                      proto.getUrgent(),
+                                     "",
                                      proto.getStory());
   }
 }
