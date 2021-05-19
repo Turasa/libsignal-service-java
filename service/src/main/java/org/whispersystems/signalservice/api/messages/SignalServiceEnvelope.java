@@ -66,7 +66,8 @@ public class SignalServiceEnvelope {
                                String destinationServiceId,
                                boolean urgent,
                                boolean story,
-                               byte[] reportingToken)
+                               byte[] reportingToken,
+                               String updatedPni)
   {
     Envelope.Builder builder = Envelope.newBuilder()
                                        .setType(Envelope.Type.valueOf(type))
@@ -75,6 +76,7 @@ public class SignalServiceEnvelope {
                                        .setServerTimestamp(serverReceivedTimestamp)
                                        .setDestinationServiceId(destinationServiceId)
                                        .setUrgent(urgent)
+                                       .setUpdatedPni(updatedPni)
                                        .setStory(story);
 
     if (sender.isPresent()) {
@@ -106,7 +108,8 @@ public class SignalServiceEnvelope {
                                String destinationServiceId,
                                boolean urgent,
                                boolean story,
-                               byte[] reportingToken)
+                               byte[] reportingToken,
+                               String updatedPni)
   {
     Envelope.Builder builder = Envelope.newBuilder()
                                        .setType(Envelope.Type.valueOf(type))
@@ -114,6 +117,7 @@ public class SignalServiceEnvelope {
                                        .setServerTimestamp(serverReceivedTimestamp)
                                        .setDestinationServiceId(destinationServiceId)
                                        .setUrgent(urgent)
+                                       .setUpdatedPni(updatedPni)
                                        .setStory(story);
 
     if (uuid != null) {
@@ -252,6 +256,14 @@ public class SignalServiceEnvelope {
     return envelope.getUrgent();
   }
 
+  public boolean hasUpdatedPni() {
+    return envelope.hasUpdatedPni() && UuidUtil.isUuid(envelope.getUpdatedPni());
+  }
+
+  public String getUpdatedPni() {
+    return envelope.getUpdatedPni();
+  }
+
   public boolean isStory() {
     return envelope.getStory();
   }
@@ -328,6 +340,7 @@ public class SignalServiceEnvelope {
                                      proto.getDestinationServiceId(),
                                      proto.getUrgent(),
                                      proto.getStory(),
-                                     proto.hasReportingToken() ? proto.getReportingToken().toByteArray() : null);
+                                     proto.hasReportingToken() ? proto.getReportingToken().toByteArray() : null,
+                                     "");
   }
 }
