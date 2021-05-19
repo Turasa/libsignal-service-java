@@ -217,7 +217,8 @@ public class SignalServiceMessageReceiver {
                                              entity.getDestinationUuid(),
                                              entity.isUrgent(),
                                              entity.isStory(),
-                                             entity.getReportingToken());
+                                             entity.getReportingToken(),
+                                             entity.getUpdatedPni());
       } else {
         envelope = new SignalServiceEnvelope(entity.getType(),
                                              entity.getTimestamp(),
@@ -228,7 +229,8 @@ public class SignalServiceMessageReceiver {
                                              entity.getDestinationUuid(),
                                              entity.isUrgent(),
                                              entity.isStory(),
-                                             entity.getReportingToken());
+                                             entity.getReportingToken(),
+                                             entity.getUpdatedPni());
       }
 
       callback.onMessage(envelope);
