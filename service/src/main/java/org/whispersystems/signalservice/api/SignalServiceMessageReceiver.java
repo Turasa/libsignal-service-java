@@ -82,7 +82,7 @@ public class SignalServiceMessageReceiver {
   {
     this(urls, new StaticCredentialsProvider(uuid, e164, password, deviceId), userAgent, listener, timer, clientZkProfileOperations, automaticNetworkRetry);
   }
-  
+
   /**
    * Construct a SignalServiceMessageReceiver.
    *
@@ -101,7 +101,7 @@ public class SignalServiceMessageReceiver {
                                       ClientZkProfileOperations clientZkProfileOperations,
                                       boolean automaticNetworkRetry)
   {
-    this(urls, new StaticCredentialsProvider(uuid, e164, password, SignalServiceAddress.DEFAULT_DEVICE_ID), signalAgent, listener, timer, clientZkProfileOperations, automaticNetworkRetry);
+    this(urls, new StaticCredentialsProvider(uuid, e164, password), signalAgent, listener, timer, clientZkProfileOperations, automaticNetworkRetry);
   }
 
   /**

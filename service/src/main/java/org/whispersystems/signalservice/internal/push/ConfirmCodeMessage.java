@@ -6,16 +6,16 @@ public class ConfirmCodeMessage {
 
   @JsonProperty
   private boolean supportsSms;
-  
+
   @JsonProperty
   private boolean fetchesMessages;
-  
+
   @JsonProperty
   private int registrationId;
-  
+
   @JsonProperty
   private String name;
-  
+
   public ConfirmCodeMessage(boolean supportsSms, boolean fetchesMessages, int registrationId,
       String name) {
     super();

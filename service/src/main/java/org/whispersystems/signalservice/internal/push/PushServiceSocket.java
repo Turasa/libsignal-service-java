@@ -157,9 +157,6 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 /**
- *
- * Network interface to the TextSecure server API.
- *
  * @author Moxie Marlinspike
  */
 public class PushServiceSocket {
@@ -184,7 +181,7 @@ public class PushServiceSocket {
   private static final String PREKEY_PATH               = "/v2/keys/%s";
   private static final String PREKEY_DEVICE_PATH        = "/v2/keys/%s/%s";
   private static final String SIGNED_PREKEY_PATH        = "/v2/keys/signed";
-  
+
   private static final String PROVISIONING_CODE_PATH    = "/v1/devices/provisioning/code";
   private static final String PROVISIONING_MESSAGE_PATH = "/v1/provisioning/%s";
   private static final String DEVICE_PATH               = "/v1/devices/%s";

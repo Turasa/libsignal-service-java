@@ -18,9 +18,6 @@ import org.whispersystems.signalservice.internal.util.BlacklistingTrustManager;
 import org.whispersystems.signalservice.internal.util.Util;
 import org.whispersystems.signalservice.internal.util.concurrent.ListenableFuture;
 import org.whispersystems.signalservice.internal.util.concurrent.SettableFuture;
-import org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketMessage;
-import org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketRequestMessage;
-import org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketResponseMessage;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -50,6 +47,9 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
+import static org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketMessage;
+import static org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketRequestMessage;
+import static org.whispersystems.signalservice.internal.websocket.WebSocketProtos.WebSocketResponseMessage;
 
 public class WebSocketConnection extends WebSocketListener {
 
@@ -100,7 +100,7 @@ public class WebSocketConnection extends WebSocketListener {
     if (credentialsProvider.isPresent()) this.wsUri = uri + "/v1/websocket/?login=%s&password=%s";
     else                                 this.wsUri = uri + "/v1/websocket/";
   }
-  
+
   public WebSocketConnection(SignalServiceUrl signalServiceUrl, String signalAgent, ConnectivityListener listener,
                              SleepTimer timer, List<Interceptor> interceptors, Optional<Dns> dns,
                              Optional<SignalProxy> signalProxy) {
@@ -123,6 +123,7 @@ public class WebSocketConnection extends WebSocketListener {
 
     if (client == null) {
       String filledUri;
+
       if (credentialsProvider.isPresent()) {
         String identifier = credentialsProvider.get().getUuid() != null ? credentialsProvider.get().getUuid().toString() : credentialsProvider.get().getE164();
         if (credentialsProvider.get().getDeviceId() == SignalServiceAddress.DEFAULT_DEVICE_ID) {
@@ -133,7 +134,9 @@ public class WebSocketConnection extends WebSocketListener {
       } else {
         filledUri = wsUri;
       }
+
       Pair<SSLSocketFactory, X509TrustManager> socketFactory = createTlsSocketFactory(signalServiceUrl.getTrustStore());
+
 
       OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
                                                            .sslSocketFactory(new Tls12SocketFactory(socketFactory.first()), socketFactory.second())
@@ -150,7 +153,7 @@ public class WebSocketConnection extends WebSocketListener {
         clientBuilder.socketFactory(new TlsProxySocketFactory(signalProxy.get().getHost(), signalProxy.get().getPort(), dns));
       }
 
-      this.okHttpClient = clientBuilder.build();
+      okHttpClient = clientBuilder.build();
 
       Request.Builder requestBuilder = new Request.Builder().url(filledUri);
 
@@ -163,7 +166,7 @@ public class WebSocketConnection extends WebSocketListener {
       }
 
       this.connected = false;
-      this.client    = this.okHttpClient.newWebSocket(requestBuilder.build(), this);
+      this.client    = okHttpClient.newWebSocket(requestBuilder.build(), this);
     }
   }
 

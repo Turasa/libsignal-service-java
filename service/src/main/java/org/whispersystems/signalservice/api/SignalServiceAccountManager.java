@@ -25,7 +25,6 @@ import org.whispersystems.libsignal.util.ByteUtil;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.crypto.InvalidCiphertextException;
 import org.whispersystems.signalservice.api.crypto.ProfileCipher;
-
 import org.whispersystems.signalservice.api.crypto.ProfileCipherOutputStream;
 import org.whispersystems.signalservice.api.groupsv2.ClientZkOperations;
 import org.whispersystems.signalservice.api.groupsv2.GroupsV2Api;
@@ -85,7 +84,6 @@ import org.whispersystems.util.Base64;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -118,10 +116,28 @@ public class SignalServiceAccountManager {
 
   private final PushServiceSocket   pushServiceSocket;
   private final ProvisioningSocket  provisioningSocket;
-  private final DynamicCredentialsProvider credentialsProvider;
+  private final DynamicCredentialsProvider credentials;
+  private final String              userAgent;
   private final GroupsV2Operations  groupsV2Operations;
 
-    /**
+  /**
+   * Construct a SignalServiceAccountManager.
+   *
+   * @param configuration The URL for the Signal Service.
+   * @param uuid The Signal Service UUID.
+   * @param e164 The Signal Service phone number.
+   * @param password A Signal Service password.
+   * @param signalAgent A string which identifies the client software.
+   */
+  public SignalServiceAccountManager(SignalServiceConfiguration configuration,
+                                     UUID uuid, String e164, String password,
+                                     String signalAgent, boolean automaticNetworkRetry,
+                                     SleepTimer timer)
+  {
+    this(configuration, uuid, e164, password, SignalServiceAddress.DEFAULT_DEVICE_ID, signalAgent, automaticNetworkRetry, timer);
+  }
+
+  /**
    * Construct a SignalServiceAccountManager.
    *
    * @param configuration The URL for the Signal Service.
@@ -143,23 +159,6 @@ public class SignalServiceAccountManager {
          automaticNetworkRetry,
          timer);
   }
-  
-  /**
-   * Construct a SignalServiceAccountManager.
-   *
-   * @param configuration The URL for the Signal Service.
-   * @param uuid The Signal Service UUID.
-   * @param e164 The Signal Service phone number.
-   * @param password A Signal Service password.
-   * @param signalAgent A string which identifies the client software.
-   */
-  public SignalServiceAccountManager(SignalServiceConfiguration configuration,
-                                     UUID uuid, String e164, String password,
-                                     String signalAgent,
-                                     boolean automaticNetworkRetry, SleepTimer timer)
-  {
-    this(configuration, uuid, e164, password, SignalServiceAddress.DEFAULT_DEVICE_ID, signalAgent, automaticNetworkRetry, timer);
-  }
 
   public SignalServiceAccountManager(SignalServiceConfiguration configuration,
                                      DynamicCredentialsProvider credentialsProvider,
@@ -168,11 +167,11 @@ public class SignalServiceAccountManager {
                                      boolean automaticNetworkRetry,
                                      SleepTimer timer)
   {
-    this.credentialsProvider = credentialsProvider;
-    this.provisioningSocket  = new ProvisioningSocket(configuration, signalAgent, timer);
     this.groupsV2Operations = groupsV2Operations;
     this.pushServiceSocket  = new PushServiceSocket(configuration, credentialsProvider, signalAgent, groupsV2Operations == null ? null : groupsV2Operations.getProfileOperations(), automaticNetworkRetry);
-
+    this.provisioningSocket = new ProvisioningSocket(configuration, signalAgent, timer);
+    this.credentials        = credentialsProvider;
+    this.userAgent          = signalAgent;
   }
 
   public byte[] getSenderCertificate() throws IOException {
@@ -630,7 +629,7 @@ public class SignalServiceAccountManager {
   public String getNewDeviceVerificationCode() throws IOException {
     return this.pushServiceSocket.getNewDeviceVerificationCode();
   }
-  
+
   /**
    * Gets info from the primary device to finish the registration as a new device.<br>
    * @param tempIdentity A temporary identity. Must be the same as the one given to the already verified device.
@@ -640,9 +639,9 @@ public class SignalServiceAccountManager {
     ProvisionMessage msg = provisioningSocket.getProvisioningMessage(tempIdentity);
 
     final String number = msg.getNumber();
-    final UUID uuid = UuidUtil.parseOrNull(msg.getUuid());
+    final UUID   uuid   = UuidUtil.parseOrNull(msg.getUuid());
 
-    credentialsProvider.setE164(number);
+    credentials.setE164(number);
     // Not setting Uuid here, as that causes a 400 Bad Request
     // when calling the finishNewDeviceRegistration endpoint
     // credentialsProvider.setUuid(uuid);
@@ -660,9 +659,9 @@ public class SignalServiceAccountManager {
     } catch (InvalidKeyException e) {
       throw new IOException("Failed to decrypt public key", e);
     }
-    final byte[] privateKeyBytes = msg.getIdentityKeyPrivate().toByteArray();
-    final ECPrivateKey privateKey = Curve.decodePrivatePoint(privateKeyBytes);
-    final IdentityKeyPair identity = new IdentityKeyPair(new IdentityKey(publicKey), privateKey);
+    final byte[]          privateKeyBytes = msg.getIdentityKeyPrivate().toByteArray();
+    final ECPrivateKey    privateKey      = Curve.decodePrivatePoint(privateKeyBytes);
+    final IdentityKeyPair identity        = new IdentityKeyPair(new IdentityKey(publicKey), privateKey);
 
     final ProfileKey profileKey;
     try {
@@ -671,8 +670,8 @@ public class SignalServiceAccountManager {
       throw new IOException("Failed to decrypt profile key", e);
     }
 
-    final String provisioningCode = msg.getProvisioningCode();
-    final boolean readReceipts = msg.hasReadReceipts() && msg.getReadReceipts();
+    final String  provisioningCode = msg.getProvisioningCode();
+    final boolean readReceipts     = msg.hasReadReceipts() && msg.getReadReceipts();
 
     return new NewDeviceRegistrationReturn(
         provisioningCode, identity,
@@ -694,8 +693,8 @@ public class SignalServiceAccountManager {
    * @return The deviceId given by the server.
    */
   public int finishNewDeviceRegistration(String provisioningCode, boolean supportsSms, boolean fetchesMessages, int registrationId, String deviceName) throws IOException {
-    int    deviceId = this.pushServiceSocket.finishNewDeviceRegistration(provisioningCode, supportsSms, fetchesMessages, registrationId, deviceName);
-    credentialsProvider.setDeviceId(deviceId);
+    int deviceId = this.pushServiceSocket.finishNewDeviceRegistration(provisioningCode, supportsSms, fetchesMessages, registrationId, deviceName);
+    credentials.setDeviceId(deviceId);
     return deviceId;
   }
 
@@ -706,15 +705,15 @@ public class SignalServiceAccountManager {
                         String code)
       throws InvalidKeyException, IOException
   {
-    ProvisioningCipher cipher  = new ProvisioningCipher(deviceKey);
+    ProvisioningCipher       cipher  = new ProvisioningCipher(deviceKey);
     ProvisionMessage.Builder message = ProvisionMessage.newBuilder()
                                                        .setIdentityKeyPublic(ByteString.copyFrom(identityKeyPair.getPublicKey().serialize()))
                                                        .setIdentityKeyPrivate(ByteString.copyFrom(identityKeyPair.getPrivateKey().serialize()))
                                                        .setProvisioningCode(code)
                                                        .setProvisioningVersion(ProvisioningVersion.CURRENT_VALUE);
 
-    String e164 = credentialsProvider.getE164();
-    UUID   uuid = credentialsProvider.getUuid();
+    String e164 = credentials.getE164();
+    UUID   uuid = credentials.getUuid();
 
     if (e164 != null) {
       message.setNumber(e164);

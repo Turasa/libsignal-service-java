@@ -15,7 +15,6 @@ import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.kdf.HKDFv3;
 import org.whispersystems.libsignal.logging.Log;
 import org.whispersystems.libsignal.state.PreKeyBundle;
-
 import org.whispersystems.libsignal.util.Pair;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.crypto.AttachmentCipherOutputStream;
@@ -202,10 +201,9 @@ public class SignalServiceMessageSender {
                                     Optional<EventListener> eventListener,
                                     ClientZkProfileOperations clientZkProfileOperations,
                                     ExecutorService executor,
-                                    long maxEnvelopeSize,
                                     boolean automaticNetworkRetry)
   {
-    this(urls, new StaticCredentialsProvider(uuid, e164, password, SignalServiceAddress.DEFAULT_DEVICE_ID), store, sessionLock, signalAgent, isMultiDevice, pipe, unidentifiedPipe, eventListener, clientZkProfileOperations, executor, maxEnvelopeSize, automaticNetworkRetry);
+    this(urls, new StaticCredentialsProvider(uuid, e164, password), store, sessionLock, signalAgent, isMultiDevice, pipe, unidentifiedPipe, eventListener, clientZkProfileOperations, executor, 0, automaticNetworkRetry);
   }
 
   public SignalServiceMessageSender(SignalServiceConfiguration urls,
@@ -1081,14 +1079,14 @@ public class SignalServiceMessageSender {
 
     return container.setSyncMessage(builder).build().toByteArray();
   }
-  
+
   private byte[] createRequestContent(RequestMessage request) {
     Content.Builder     container = Content.newBuilder();
 
     SyncMessage.Builder builder   = SyncMessage.newBuilder();
-    
+
     builder.setRequest(request.getRequest());
-    
+
     return container.setSyncMessage(builder).build().toByteArray();
   }
 

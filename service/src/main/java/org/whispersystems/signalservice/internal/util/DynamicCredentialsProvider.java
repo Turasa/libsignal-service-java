@@ -10,7 +10,7 @@ public class DynamicCredentialsProvider implements CredentialsProvider {
   private String e164;
   private String password;
   private int deviceId;
-  
+
   public DynamicCredentialsProvider(UUID uuid, String e164, String password, int deviceId) {
     super();
     this.uuid = uuid;
@@ -50,9 +50,9 @@ public class DynamicCredentialsProvider implements CredentialsProvider {
   public int getDeviceId() {
     return deviceId;
   }
-  
+
   public void setDeviceId(int deviceId) {
     this.deviceId = deviceId;
   }
-  
+
 }

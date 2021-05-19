@@ -1,15 +1,6 @@
-# Gradle
 .gradle
-build/
-local.properties
-gradle.properties
-
-# IDEA
+.idea
 *.iml
-*.idea
-
-# Eclipse
-.project
-.settings/
-.classpath
-
+local.properties
+build/
+gradle.properties

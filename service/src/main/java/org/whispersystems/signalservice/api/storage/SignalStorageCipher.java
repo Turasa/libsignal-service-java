@@ -1,7 +1,6 @@
 package org.whispersystems.signalservice.api.storage;
 
 import org.whispersystems.libsignal.InvalidKeyException;
-import org.whispersystems.libsignal.util.ByteUtil;
 import org.whispersystems.signalservice.internal.util.Util;
 
 import java.security.InvalidAlgorithmParameterException;
