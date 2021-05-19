@@ -54,6 +54,7 @@ import org.whispersystems.signalservice.api.messages.multidevice.KeysMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.MessageRequestResponseMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.OutgoingPaymentMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.ReadMessage;
+import org.whispersystems.signalservice.api.messages.multidevice.RequestMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.SentTranscriptMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.SignalServiceSyncMessage;
 import org.whispersystems.signalservice.api.messages.multidevice.StickerPackOperationMessage;
@@ -150,6 +151,7 @@ public class SignalServiceMessageSender {
   private final SignalSessionLock       sessionLock;
   private final SignalServiceAddress    localAddress;
   private final Optional<EventListener> eventListener;
+  private final CredentialsProvider     credentialsProvider;
 
   private final AttachmentService attachmentService;
   private final MessagingService  messagingService;
@@ -169,6 +171,7 @@ public class SignalServiceMessageSender {
                                     long maxEnvelopeSize,
                                     boolean automaticNetworkRetry)
   {
+    this.credentialsProvider = credentialsProvider;
     this.socket            = new PushServiceSocket(urls, credentialsProvider, signalAgent, clientZkProfileOperations, automaticNetworkRetry);
     this.store             = store;
     this.sessionLock       = sessionLock;
@@ -517,6 +520,8 @@ public class SignalServiceMessageSender {
       content = createMultiDeviceSyncKeysContent(message.getKeys().get());
     } else if (message.getVerified().isPresent()) {
       return sendVerifiedMessage(message.getVerified().get(), unidentifiedAccess);
+    } else if (message.getRequest().isPresent()) {
+      content = createRequestContent(message.getRequest().get());
     } else {
       throw new IOException("Unsupported sync message!");
     }
@@ -1091,6 +1096,16 @@ public class SignalServiceMessageSender {
 
       builder.addRead(readBuilder.build());
     }
+
+    return container.setSyncMessage(builder).build();
+  }
+
+  private Content createRequestContent(RequestMessage request) {
+    Content.Builder     container = Content.newBuilder();
+
+    SyncMessage.Builder builder   = SyncMessage.newBuilder();
+
+    builder.setRequest(request.getRequest());
 
     return container.setSyncMessage(builder).build();
   }
@@ -1948,12 +1963,14 @@ public class SignalServiceMessageSender {
   {
     List<OutgoingPushMessage> messages = new LinkedList<>();
 
-    if (!recipient.matches(localAddress) || unidentifiedAccess.isPresent()) {
+    boolean myself = recipient.matches(localAddress);
+    if (!myself || credentialsProvider.getDeviceId() != SignalServiceAddress.DEFAULT_DEVICE_ID || unidentifiedAccess.isPresent()) {
       messages.add(getEncryptedMessage(socket, recipient, unidentifiedAccess, SignalServiceAddress.DEFAULT_DEVICE_ID, plaintext));
     }
 
     for (int deviceId : store.getSubDeviceSessions(recipient.getIdentifier())) {
-      if (store.containsSession(new SignalProtocolAddress(recipient.getIdentifier(), deviceId))) {
+      if ((!myself || deviceId != credentialsProvider.getDeviceId() || unidentifiedAccess.isPresent()) &&
+          store.containsSession(new SignalProtocolAddress(recipient.getIdentifier(), deviceId))) {
         messages.add(getEncryptedMessage(socket, recipient, unidentifiedAccess, deviceId, plaintext));
       }
     }
