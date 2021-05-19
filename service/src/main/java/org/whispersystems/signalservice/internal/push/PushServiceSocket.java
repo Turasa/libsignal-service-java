@@ -92,6 +92,7 @@ import org.whispersystems.signalservice.internal.push.exceptions.InAppPaymentPro
 import org.whispersystems.signalservice.internal.push.exceptions.InAppPaymentReceiptCredentialError;
 import org.whispersystems.signalservice.internal.push.exceptions.InvalidUnidentifiedAccessHeaderException;
 import org.whispersystems.signalservice.internal.push.exceptions.MismatchedDevicesException;
+import org.whispersystems.signalservice.internal.push.exceptions.MissingCapabilitiesException;
 import org.whispersystems.signalservice.internal.push.exceptions.NotInGroupException;
 import org.whispersystems.signalservice.internal.push.exceptions.StaleDevicesException;
 import org.whispersystems.signalservice.internal.push.http.CancelationSignal;
@@ -168,6 +169,7 @@ public class PushServiceSocket implements Closeable {
   private static final String DELETE_ACCOUNT_PATH        = "/v1/accounts/me";
 
   private static final String SET_RESTORE_METHOD_PATH   = "/v1/devices/restore_account/%s";
+  private static final String DEVICE_LINK_PATH          = "/v1/devices/link";
 
   private static final String GROUP_MESSAGE_PATH        = "/v1/messages/multi_recipient?ts=%s&online=%s&urgent=%s&story=%s";
 
@@ -369,6 +371,40 @@ public class PushServiceSocket implements Closeable {
     return JsonUtil.fromJson(response, VerifyAccountResponse.class);
   }
 
+  public int finishNewDeviceRegistration(String provisioningCode,
+                                         AccountAttributes accountAttributes,
+                                         PreKeyCollection aciPreKeys, PreKeyCollection pniPreKeys) throws IOException
+  {
+    LinkDeviceRequest linkDeviceRequest;
+    try {
+      final SignedPreKeyEntity aciSignedPreKey = new SignedPreKeyEntity(Objects.requireNonNull(aciPreKeys.getSignedPreKey()).getId(),
+                                                                        aciPreKeys.getSignedPreKey().getKeyPair().getPublicKey(),
+                                                                        aciPreKeys.getSignedPreKey().getSignature());
+      final SignedPreKeyEntity pniSignedPreKey = new SignedPreKeyEntity(Objects.requireNonNull(pniPreKeys.getSignedPreKey()).getId(),
+                                                                        pniPreKeys.getSignedPreKey().getKeyPair().getPublicKey(),
+                                                                        pniPreKeys.getSignedPreKey().getSignature());
+      final KyberPreKeyEntity aciLastResortKyberPreKey = new KyberPreKeyEntity(Objects.requireNonNull(aciPreKeys.getLastResortKyberPreKey()).getId(),
+                                                                               aciPreKeys.getLastResortKyberPreKey().getKeyPair().getPublicKey(),
+                                                                               aciPreKeys.getLastResortKyberPreKey().getSignature());
+      final KyberPreKeyEntity pniLastResortKyberPreKey = new KyberPreKeyEntity(Objects.requireNonNull(pniPreKeys.getLastResortKyberPreKey()).getId(),
+                                                                               pniPreKeys.getLastResortKyberPreKey().getKeyPair().getPublicKey(),
+                                                                               pniPreKeys.getLastResortKyberPreKey().getSignature());
+      linkDeviceRequest = new LinkDeviceRequest(
+          provisioningCode, accountAttributes,
+          aciSignedPreKey, pniSignedPreKey, aciLastResortKyberPreKey, pniLastResortKyberPreKey
+      );
+    } catch (InvalidKeyException e) {
+      throw new AssertionError("unexpected invalid key", e);
+    }
+    String   json         = JsonUtil.toJson(linkDeviceRequest);
+    String   responseText = makeServiceRequest(DEVICE_LINK_PATH, "PUT", json, NO_HEADERS, NEW_DEVICE_PUT_RESPONSE_HANDLER, null);
+    DeviceId response     = JsonUtil.fromJson(responseText, DeviceId.class);
+    return response.getDeviceId();
+  }
+
+  private static final ResponseCodeHandler NEW_DEVICE_PUT_RESPONSE_HANDLER = (responseCode, body, header) -> {
+    if (responseCode == 409) throw new MissingCapabilitiesException();
+  };
   public void setRestoreMethodChosen(@Nonnull String token, @Nonnull RestoreMethodBody request) throws IOException {
     String body = JsonUtil.toJson(request);
     makeServiceRequest(String.format(Locale.US, SET_RESTORE_METHOD_PATH, urlEncode(token)), "PUT", body, NO_HEADERS, UNOPINIONATED_HANDLER, SealedSenderAccess.NONE);
