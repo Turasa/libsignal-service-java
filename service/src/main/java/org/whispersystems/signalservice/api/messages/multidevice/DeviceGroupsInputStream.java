@@ -6,6 +6,7 @@
 
 package org.whispersystems.signalservice.api.messages.multidevice;
 
+import org.signal.core.util.stream.LimitedInputStream;
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream;
 import org.whispersystems.signalservice.api.push.ServiceId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
@@ -51,7 +52,7 @@ public class DeviceGroupsInputStream extends ChunkedInputStream {
 
     if (details.avatar != null && details.avatar.length != null) {
       long        avatarLength      = details.avatar.length;
-      InputStream avatarStream      = new ChunkedInputStream.LimitedInputStream(in, avatarLength);
+      InputStream avatarStream      = new LimitedInputStream(in, avatarLength);
       String      avatarContentType = details.avatar.contentType;
 
       avatar = Optional.of(new SignalServiceAttachmentStream(avatarStream, avatarContentType, avatarLength, Optional.empty(), false, false, false, false, null, null));
