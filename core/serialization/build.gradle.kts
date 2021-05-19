@@ -8,6 +8,8 @@ plugins {
   id("org.jetbrains.kotlin.jvm")
   alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.ktlint)
+  id("maven-publish")
+  id("signing")
 }
 
 ktlint {
@@ -15,6 +17,8 @@ ktlint {
 }
 
 java {
+  withJavadocJar()
+  withSourcesJar()
   sourceCompatibility = JavaVersion.toVersion(libs.versions.javaVersion.get())
   targetCompatibility = JavaVersion.toVersion(libs.versions.javaVersion.get())
 }
@@ -32,4 +36,46 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.libsignal.client)
   api(libs.arrow.core)
+}
+
+publishing {
+  publications {
+    create<MavenPublication>("mavenJava") {
+      from(components["java"])
+      artifactId = "serialization"
+
+      pom {
+        name.set("serialization")
+        description.set("Signal Service communication library for Java, unofficial fork")
+        url.set("https://github.com/Turasa/libsignal-service-java")
+        licenses {
+          license {
+            name.set("GPLv3")
+            url.set("https://www.gnu.org/licenses/gpl-3.0.txt")
+          }
+        }
+        developers {
+          developer {
+            name.set("Moxie Marlinspike")
+          }
+          developer {
+            name.set("Sebastian Scheibner")
+          }
+          developer {
+            name.set("Tilman Hoffbauer")
+          }
+        }
+        scm {
+          connection.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+          developerConnection.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+          url.set("scm:git@github.com:Turasa/libsignal-service-java.git")
+        }
+      }
+    }
+  }
+}
+
+signing {
+  isRequired = gradle.taskGraph.hasTask("uploadArchives")
+  sign(publishing.publications["mavenJava"])
 }
