@@ -18,20 +18,20 @@ dependencyVerification {
         ['com.googlecode.libphonenumber:libphonenumber:8.12.33',
          'eb983d0b10104f5f31592dacf691dde6032139e626bd95ec22e1ae949ef1806d'],
 
-        ['com.squareup.okhttp3:okhttp:3.12.13',
-         '508234e024ef7e270ab1a6d5b356f5b98e786511239ca986d684fd1e2cf7bc82'],
+        ['com.squareup.okhttp3:okhttp:4.9.2',
+         '3b2ee1b768c1df28c30d2fe6b38dda4d2c519210e30ca3d27950618c563c92de'],
 
-        ['com.squareup.okio:okio:2.2.2',
-         'e58c97406a6bb1138893750299ac63c6aa04b38b6b49eae1bfcad1a63ef9ba1b'],
+        ['com.squareup.okio:okio:2.10.0',
+         'a27f091d34aa452e37227e2cfa85809f29012a8ef2501a9b5a125a978e4fcbc1'],
 
         ['io.reactivex.rxjava3:rxjava:3.0.13',
          '598abaf71dbc970dd0727e6d5f4f786dc999df5b972cbf261316a32e155b2c69'],
 
-        ['org.jetbrains.kotlin:kotlin-stdlib-common:1.2.60',
-         '09b4375a065cf127abc998c5dcf22b1664c45af42b489499d7a8f4f8ab793fb1'],
+        ['org.jetbrains.kotlin:kotlin-stdlib-common:1.4.20',
+         'a7112c9b3cefee418286c9c9372f7af992bd1e6e030691d52f60cb36dbec8320'],
 
-        ['org.jetbrains.kotlin:kotlin-stdlib:1.2.60',
-         '6a130298f5171ac52a1e2496f7eae785b6f56416ea3ccb99e4344d04d83ff071'],
+        ['org.jetbrains.kotlin:kotlin-stdlib:1.4.20',
+         'b8ab1da5cdc89cb084d41e1f28f20a42bd431538642a5741c52bbfae3fa3e656'],
 
         ['org.jetbrains:annotations:13.0',
          'ace2a10dc8e2d5fd34925ecac03e4988b2c0f851650c94b8cef49ba1bd111478'],
