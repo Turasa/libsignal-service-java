@@ -231,6 +231,8 @@ public class PushServiceSocket {
   private static final String SUBMIT_RATE_LIMIT_CHALLENGE       = "/v1/challenge";
   private static final String REQUEST_RATE_LIMIT_PUSH_CHALLENGE = "/v1/challenge/push";
 
+  private static final String REPORT_SPAM = "/v1/messages/report/%s/%s";
+
   private static final String SERVER_DELIVERED_TIMESTAMP_HEADER = "X-Signal-Timestamp";
 
   private static final Map<String, String> NO_HEADERS = Collections.emptyMap();
@@ -1544,7 +1546,7 @@ public class PushServiceSocket {
         throw new ServerRejectedException();
     }
 
-    if (responseCode != 200 && responseCode != 204) {
+    if (responseCode != 200 && responseCode != 202 && responseCode != 204) {
       throw new NonSuccessfulResponseCodeException(responseCode, "Bad response: " + responseCode + " " + responseMessage);
     }
 
@@ -2234,6 +2236,12 @@ public class PushServiceSocket {
       Log.w(TAG, e);
       throw new MalformedResponseException("Unable to parse entity", e);
     }
+  }
+
+  public void reportSpam(String e164, String serverGuid)
+      throws NonSuccessfulResponseCodeException, MalformedResponseException, PushNetworkException
+  {
+    makeServiceRequest(String.format(REPORT_SPAM, e164, serverGuid), "POST", "");
   }
 
   public static final class GroupHistory {
