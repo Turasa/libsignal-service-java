@@ -36,7 +36,7 @@ dependencies {
     api libs.google.libphonenumber
     api libs.jackson.core
 
-    implementation libs.signal.client.java
+    api libs.signal.client.java
     api libs.square.okhttp3
     implementation libs.threeten.threetenbp
 
