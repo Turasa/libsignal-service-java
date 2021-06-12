@@ -34,7 +34,7 @@ dependencies {
     api libs.google.libphonenumber
     api libs.jackson.core
 
-    implementation libs.libsignal.client
+    api libs.libsignal.client
     api libs.square.okhttp3
     api libs.square.okio
     implementation libs.google.jsr305
