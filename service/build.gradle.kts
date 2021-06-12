@@ -98,7 +98,7 @@ dependencies {
   api(libs.jackson.core)
   api(libs.jackson.module.kotlin)
 
-  implementation(libs.libsignal.client)
+  api(libs.libsignal.client)
   api(libs.square.okhttp3)
   api(libs.square.okio)
   implementation(libs.google.jsr305)
@@ -110,7 +110,7 @@ dependencies {
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.kotlinx.coroutines.core.jvm)
 
-  implementation(project(":core-util-jvm"))
+  api(project(":core-util-jvm"))
 
   testImplementation(testLibs.junit.junit)
   testImplementation(testLibs.assertk)
