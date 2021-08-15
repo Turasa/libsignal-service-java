@@ -320,7 +320,7 @@ public class SignalServiceMessageSender {
     long              timestamp       = message.getTimestamp();
     SendMessageResult result          = sendMessage(recipient, getTargetUnidentifiedAccess(unidentifiedAccess), timestamp, envelopeContent, false, null);
 
-    if (result.getSuccess() != null && result.getSuccess().isNeedsSync()) {
+    if (result.getSuccess() != null && result.getSuccess().isNeedsSync() && !localAddress.matches(recipient)) {
       Content         syncMessage        = createMultiDeviceSentTranscriptContent(content, Optional.of(recipient), timestamp, Collections.singletonList(result), false);
       EnvelopeContent syncMessageContent = EnvelopeContent.encrypted(syncMessage, ContentHint.IMPLICIT, Optional.absent());
 
