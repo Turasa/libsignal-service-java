@@ -10,11 +10,6 @@ repositories {
     google()
     mavenCentral()
     mavenLocal()
-    jcenter {
-        content {
-            includeVersion 'org.jetbrains.trove4j', 'trove4j', '20160824'
-        }
-    }
 }
 
 dependencies {
@@ -113,13 +108,5 @@ afterEvaluate {
     signing {
         required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
         sign publishing.publications.mavenJava
-    }
-
-    task installArchives(type: Upload) {
-        description "Installs the artifacts to the local Maven repository."
-        configuration = configurations['archives']
-        repositories {
-            mavenLocal()
-        }
     }
 }
