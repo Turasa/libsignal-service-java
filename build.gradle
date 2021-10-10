@@ -27,6 +27,29 @@ buildscript {
     }
 }
 
+plugins {
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+}
+
+project.group = "com.github.turasa"
+
+def getRepositoryUsername() {
+    return hasProperty('whisperSonatypeUsername') ? whisperSonatypeUsername : ""
+}
+
+def getRepositoryPassword() {
+    return hasProperty('whisperSonatypePassword') ? whisperSonatypePassword : ""
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = getRepositoryUsername()
+            password = getRepositoryPassword()
+        }
+    }
+}
+
 allprojects {
     // Needed because otherwise the kapt task defaults to jvmTarget 17, which "poisons the well" and requires us to bump up too
     tasks.withType(KotlinCompile).configureEach {
