@@ -2,12 +2,6 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        jcenter {
-            content {
-                includeVersion 'org.jetbrains.trove4j', 'trove4j', '20160824'
-                includeGroupByRegex "com\\.archinamon.*"
-            }
-        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:7.2.2'
