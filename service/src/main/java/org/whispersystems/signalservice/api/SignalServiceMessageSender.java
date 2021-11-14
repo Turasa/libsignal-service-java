@@ -210,17 +210,17 @@ public class SignalServiceMessageSender {
   /**
    * Send a retry receipt for a bad-encrypted envelope.
    */
-  public void sendRetryReceipt(SignalServiceAddress recipient,
-                               Optional<UnidentifiedAccessPair> unidentifiedAccess,
-                               Optional<byte[]> groupId,
-                               DecryptionErrorMessage errorMessage)
+  public SendMessageResult sendRetryReceipt(SignalServiceAddress recipient,
+                                            Optional<UnidentifiedAccessPair> unidentifiedAccess,
+                                            Optional<byte[]> groupId,
+                                            DecryptionErrorMessage errorMessage)
       throws IOException, UntrustedIdentityException
 
   {
     PlaintextContent content         = new PlaintextContent(errorMessage);
     EnvelopeContent  envelopeContent = EnvelopeContent.plaintext(content, groupId);
 
-    sendMessage(recipient, getTargetUnidentifiedAccess(unidentifiedAccess), System.currentTimeMillis(), envelopeContent, false, null);
+    return sendMessage(recipient, getTargetUnidentifiedAccess(unidentifiedAccess), System.currentTimeMillis(), envelopeContent, false, null);
   }
 
   /**
@@ -229,7 +229,7 @@ public class SignalServiceMessageSender {
    * @param recipient The destination
    * @param message The typing indicator to deliver
    */
-  public void sendTyping(SignalServiceAddress recipient,
+  public SendMessageResult sendTyping(SignalServiceAddress recipient,
                          Optional<UnidentifiedAccessPair> unidentifiedAccess,
                          SignalServiceTypingMessage message)
       throws IOException, UntrustedIdentityException
@@ -237,19 +237,19 @@ public class SignalServiceMessageSender {
     Content         content         = createTypingContent(message);
     EnvelopeContent envelopeContent = EnvelopeContent.encrypted(content, ContentHint.IMPLICIT, Optional.absent());
 
-    sendMessage(recipient, getTargetUnidentifiedAccess(unidentifiedAccess), message.getTimestamp(), envelopeContent, true, null);
+    return sendMessage(recipient, getTargetUnidentifiedAccess(unidentifiedAccess), message.getTimestamp(), envelopeContent, true, null);
   }
 
-  public void sendTyping(List<SignalServiceAddress>             recipients,
-                         List<Optional<UnidentifiedAccessPair>> unidentifiedAccess,
-                         SignalServiceTypingMessage             message,
-                         CancelationSignal                      cancelationSignal)
+  public List<SendMessageResult> sendTyping(List<SignalServiceAddress>             recipients,
+                                            List<Optional<UnidentifiedAccessPair>> unidentifiedAccess,
+                                            SignalServiceTypingMessage             message,
+                                            CancelationSignal                      cancelationSignal)
       throws IOException
   {
     Content         content         = createTypingContent(message);
     EnvelopeContent envelopeContent = EnvelopeContent.encrypted(content, ContentHint.IMPLICIT, Optional.absent());
 
-    sendMessage(recipients, getTargetUnidentifiedAccess(unidentifiedAccess), message.getTimestamp(), envelopeContent, true, null, cancelationSignal);
+    return sendMessage(recipients, getTargetUnidentifiedAccess(unidentifiedAccess), message.getTimestamp(), envelopeContent, true, null, cancelationSignal);
   }
 
   /**
