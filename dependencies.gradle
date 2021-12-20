@@ -18,8 +18,8 @@ dependencyResolutionManagement {
             alias('libsignal-android').to('org.signal', 'libsignal-android').versionRef('libsignal-client')
 
             // Third Party
-            alias('jackson-core').to('com.fasterxml.jackson.core:jackson-databind:2.9.9.2')
-            alias('jackson-module-kotlin').to('com.fasterxml.jackson.module:jackson-module-kotlin:2.12.0')
+            alias('jackson-core').to('com.fasterxml.jackson.core:jackson-databind:2.15.0')
+            alias('jackson-module-kotlin').to('com.fasterxml.jackson.module:jackson-module-kotlin:2.15.0')
             alias('square-okhttp3').to('com.squareup.okhttp3:okhttp:4.11.0')
             alias('square-okio').to('com.squareup.okio:okio:3.3.0')
             alias('rxjava3-rxjava').to('io.reactivex.rxjava3:rxjava:3.0.13')
