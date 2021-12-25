@@ -8,6 +8,7 @@ package org.whispersystems.signalservice.api.crypto;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import org.signal.client.internal.Native;
 import org.signal.libsignal.metadata.InvalidMetadataMessageException;
 import org.signal.libsignal.metadata.InvalidMetadataVersionException;
 import org.signal.libsignal.metadata.ProtocolDuplicateMessageException;
@@ -214,6 +215,9 @@ public class SignalServiceCipher {
 
         paddedMessage = result.getPaddedMessage();
         metadata      = new SignalServiceMetadata(resultAddress, result.getDeviceId(), envelope.getTimestamp(), envelope.getServerReceivedTimestamp(), envelope.getServerDeliveredTimestamp(), needsReceipt, envelope.getServerGuid(), groupId);
+      } else if (envelope.isPlaintextContent()) {
+        paddedMessage = Native.PlaintextContent_DeserializeAndGetContent(ciphertext);
+        metadata      = new SignalServiceMetadata(envelope.getSourceAddress(), envelope.getSourceDevice(), envelope.getTimestamp(), envelope.getServerReceivedTimestamp(), envelope.getServerDeliveredTimestamp(), false, envelope.getServerGuid(), Optional.absent());
       } else {
         throw new InvalidMetadataMessageException("Unknown type: " + envelope.getType());
       }
