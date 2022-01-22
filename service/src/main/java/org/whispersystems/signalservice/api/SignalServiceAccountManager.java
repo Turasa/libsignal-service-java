@@ -181,7 +181,7 @@ public class SignalServiceAccountManager {
    * V1 PINs are no longer used in favor of V2 PINs stored on KBS.
    *
    * You can remove a V1 PIN, but typically this is unnecessary, as setting a V2 PIN via
-   * {@link KeyBackupService.Session#enableRegistrationLock(MasterKey)}} will automatically clear the
+   * {@link KeyBackupService.PinChangeSession#enableRegistrationLock(MasterKey)}} will automatically clear the
    * V1 PIN on the service.
    */
   public void removeRegistrationLockV1() throws IOException {
