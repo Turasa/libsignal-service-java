@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class DeviceInfo {
 
   @JsonProperty
-  private long id;
+  private int id;
 
   @JsonProperty
   private String name;
@@ -24,7 +24,7 @@ public class DeviceInfo {
 
   public DeviceInfo() {}
 
-  public long getId() {
+  public int getId() {
     return id;
   }
 
