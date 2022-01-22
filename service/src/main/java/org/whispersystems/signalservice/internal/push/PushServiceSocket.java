@@ -450,7 +450,7 @@ public class PushServiceSocket {
     return JsonUtil.fromJson(responseText, DeviceInfoList.class).getDevices();
   }
 
-  public void removeDevice(long deviceId) throws IOException {
+  public void removeDevice(int deviceId) throws IOException {
     makeServiceRequest(String.format(DEVICE_PATH, String.valueOf(deviceId)), "DELETE", null);
   }
 
