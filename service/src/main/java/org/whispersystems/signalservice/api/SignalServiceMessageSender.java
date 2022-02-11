@@ -2385,7 +2385,7 @@ public class SignalServiceMessageSender {
     deviceIds.add(SignalServiceAddress.DEFAULT_DEVICE_ID);
     deviceIds.addAll(subDevices);
 
-    if (recipient.matches(localAddress)) {
+    if (!unidentifiedAccess.isPresent() && recipient.matches(localAddress)) {
       deviceIds.remove(Integer.valueOf(localDeviceId));
     }
 
