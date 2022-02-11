@@ -2883,7 +2883,7 @@ public class SignalServiceMessageSender {
 
     deviceIds.add(SignalServiceAddress.DEFAULT_DEVICE_ID);
 
-    if (recipient.matches(localAddress)) {
+    if (sealedSenderAccess == null && recipient.matches(localAddress)) {
       deviceIds.remove(localDeviceId);
 
       if (deviceIds.isEmpty()) {
