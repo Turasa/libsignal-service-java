@@ -2519,6 +2519,7 @@ public class PushServiceSocket {
             throw new PushNetworkException(e);
           }
 
+          Log.i(TAG, "Received 400 response, with body: " + body);
           if (body.isEmpty()) {
             throw new ImpossiblePhoneNumberException();
           } else {
