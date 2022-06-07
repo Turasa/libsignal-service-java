@@ -1391,6 +1391,9 @@ public class PushServiceSocket {
       if (body != null) {
         body.close();
       }
+      if (response != null) {
+        response.close();
+      }
       synchronized (connections) {
         connections.remove(call);
       }
