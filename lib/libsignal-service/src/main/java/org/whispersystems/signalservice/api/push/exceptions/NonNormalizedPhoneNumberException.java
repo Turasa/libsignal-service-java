@@ -4,6 +4,7 @@ import org.signal.network.exceptions.MalformedResponseException;
 
 import org.signal.network.exceptions.NonSuccessfulResponseCodeException;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.signal.network.util.JsonUtil;
@@ -44,5 +45,14 @@ public class NonNormalizedPhoneNumberException extends NonSuccessfulResponseCode
 
     @JsonProperty
     private String normalizedNumber;
+
+    @JsonCreator
+    public JsonResponse(
+        @JsonProperty(required = true, value = "originalNumber") String originalNumber,
+        @JsonProperty(required = true, value = "normalizedNumber") String normalizedNumber
+    ) {
+      this.originalNumber   = originalNumber;
+      this.normalizedNumber = normalizedNumber;
+    }
   }
 }
