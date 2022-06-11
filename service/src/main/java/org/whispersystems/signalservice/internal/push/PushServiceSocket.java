@@ -2527,7 +2527,7 @@ public class PushServiceSocket {
               throw NonNormalizedPhoneNumberException.forResponse(body);
             } catch (MalformedResponseException e) {
               Log.w(TAG, "Unable to parse 400 response! Assuming a generic 400.");
-              throw new ImpossiblePhoneNumberException();
+              throw new NonSuccessfulResponseCodeException(responseCode, "Response: " + body);
             }
           }
         case 402:
