@@ -2160,7 +2160,10 @@ public class PushServiceSocket {
     if (body == null) {
       throw new MalformedResponseException("No body!");
     }
+    return readBodyStringNonNull(body);
+  }
 
+  private static String readBodyStringNonNull(ResponseBody body) throws PushNetworkException {
     try {
       return body.string();
     } catch (IOException e) {
@@ -2495,8 +2498,8 @@ public class PushServiceSocket {
     public void handle(int responseCode, ResponseBody responseBody) throws NonSuccessfulResponseCodeException, PushNetworkException {
       switch (responseCode) {
         case 400:
+          String body = responseBody != null ? readBodyStringNonNull(responseBody) : "";
           try {
-            String body = responseBody != null ? readBodyString(responseBody) : "";
             if (body.isEmpty()) {
               throw new ImpossiblePhoneNumberException();
             } else {
@@ -2504,7 +2507,7 @@ public class PushServiceSocket {
             }
           } catch (MalformedResponseException e) {
             Log.w(TAG, "Unable to parse 400 response! Assuming a generic 400.");
-            throw new ImpossiblePhoneNumberException();
+            throw new NonSuccessfulResponseCodeException(responseCode, "Response: " + body);
           }
         case 402:
           throw new CaptchaRequiredException();
