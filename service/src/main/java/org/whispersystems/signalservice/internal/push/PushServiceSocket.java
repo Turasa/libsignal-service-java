@@ -1700,7 +1700,10 @@ public class PushServiceSocket implements Closeable {
     if (body == null) {
       throw new MalformedResponseException("No body!");
     }
+    return readBodyStringNonNull(body);
+  }
 
+  private static String readBodyStringNonNull(ResponseBody body) throws PushNetworkException {
     try {
       return body.string();
     } catch (IOException e) {
