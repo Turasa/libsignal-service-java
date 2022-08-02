@@ -71,6 +71,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import static org.whispersystems.signalservice.internal.push.SignalServiceProtos.GroupContext.Type.DELIVER;
+
 @SuppressWarnings("OptionalIsPresent") public final class SignalServiceContent {
 
   private static final String TAG = SignalServiceContent.class.getSimpleName();
@@ -676,8 +678,16 @@ import javax.annotation.Nullable;
                                                                      SignalServiceProtos.DataMessage content)
       throws UnsupportedDataMessageException, InvalidMessageStructureException
   {
-    SignalServiceGroupV2           groupInfoV2  = createGroupV2Info(content);
-    Optional<SignalServiceGroupV2> groupContext = Optional.ofNullable(groupInfoV2);
+    SignalServiceGroup                  groupInfoV1  = createGroupV1Info(content);
+    SignalServiceGroupV2                groupInfoV2  = createGroupV2Info(content);
+    Optional<SignalServiceGroupContext> groupContext;
+
+    try {
+      groupContext = SignalServiceGroupContext.createOptional(groupInfoV1, groupInfoV2);
+    } catch (InvalidMessageException e) {
+      throw new InvalidMessageStructureException(e);
+    }
+
 
     List<SignalServiceAttachment>            attachments      = new LinkedList<>();
     boolean                                  endSession       = ((content.getFlags() & SignalServiceProtos.DataMessage.Flags.END_SESSION_VALUE) != 0);
@@ -726,6 +736,7 @@ import javax.annotation.Nullable;
 
     return SignalServiceDataMessage.newBuilder()
                                    .withTimestamp(metadata.getTimestamp())
+                                   .asGroupMessage(groupInfoV1)
                                    .asGroupMessage(groupInfoV2)
                                    .withAttachments(attachments)
                                    .withBody(content.hasBody() ? content.getBody() : null)
@@ -1508,6 +1519,71 @@ import javax.annotation.Nullable;
     } else {
       return SignalServiceTextAttachment.forSolidBackground(text, Optional.ofNullable(style), textForegroundColor, textBackgroundColor, preview, attachment.getColor());
     }
+  }
+
+  private static SignalServiceGroup createGroupV1Info(SignalServiceProtos.DataMessage content) throws InvalidMessageStructureException {
+    if (!content.hasGroup()) return null;
+
+    SignalServiceGroup.Type type;
+
+    switch (content.getGroup().getType()) {
+      case DELIVER:      type = SignalServiceGroup.Type.DELIVER;      break;
+      case UPDATE:       type = SignalServiceGroup.Type.UPDATE;       break;
+      case QUIT:         type = SignalServiceGroup.Type.QUIT;         break;
+      case REQUEST_INFO: type = SignalServiceGroup.Type.REQUEST_INFO; break;
+      default:           type = SignalServiceGroup.Type.UNKNOWN;      break;
+    }
+
+    if (content.getGroup().getType() != DELIVER) {
+      String                         name    = null;
+      List<SignalServiceAddress>     members = null;
+      SignalServiceAttachmentPointer avatar  = null;
+
+      if (content.getGroup().hasName()) {
+        name = content.getGroup().getName();
+      }
+
+      if (content.getGroup().getMembersCount() > 0) {
+        members = new ArrayList<>(content.getGroup().getMembersCount());
+
+        for (SignalServiceProtos.GroupContext.Member member : content.getGroup().getMembersList()) {
+          if (member.getE164() != null && !member.getE164().isEmpty()) {
+            members.add(new SignalServiceAddress(ServiceId.UNKNOWN, member.getE164()));
+          } else {
+            throw new InvalidMessageStructureException("GroupContext.Member had no address!");
+          }
+        }
+      } else if (content.getGroup().getMembersE164Count() > 0) {
+        members = new ArrayList<>(content.getGroup().getMembersE164Count());
+
+        for (String member : content.getGroup().getMembersE164List()) {
+          members.add(new SignalServiceAddress(ServiceId.UNKNOWN, member));
+        }
+      }
+
+      if (content.getGroup().hasAvatar()) {
+        SignalServiceProtos.AttachmentPointer pointer = content.getGroup().getAvatar();
+
+        avatar = new SignalServiceAttachmentPointer(pointer.getCdnNumber(),
+                                                    SignalServiceAttachmentRemoteId.from(pointer),
+                                                    pointer.getContentType(),
+                                                    pointer.getKey().toByteArray(),
+                                                    Optional.of(pointer.getSize()),
+                                                    Optional.empty(), 0, 0,
+                                                    Optional.ofNullable(pointer.hasDigest() ? pointer.getDigest().toByteArray() : null),
+                                                    Optional.empty(),
+                                                    false,
+                                                    false,
+                                                    false,
+                                                    Optional.empty(),
+                                                    Optional.empty(),
+                                                    pointer.hasUploadTimestamp() ? pointer.getUploadTimestamp() : 0);
+      }
+
+      return new SignalServiceGroup(type, content.getGroup().getId().toByteArray(), name, members, avatar);
+    }
+
+    return new SignalServiceGroup(content.getGroup().getId().toByteArray());
   }
 
   private static @Nullable SignalServiceGroupV2 createGroupV2Info(SignalServiceProtos.StoryMessage storyMessage) throws InvalidMessageStructureException {
