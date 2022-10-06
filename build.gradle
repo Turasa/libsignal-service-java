@@ -53,7 +53,7 @@ nexusPublishing {
 ext.signalJavaVersion = JavaVersion.VERSION_11
 ext.signalKotlinJvmTarget = "11"
 
-ext.lib_signal_service_version_number = "2.15.3"
+ext.lib_signal_service_version_number = "2.15.3_unofficial_86"
 ext.lib_signal_service_group_info     = "com.github.turasa"
 
 allprojects {
