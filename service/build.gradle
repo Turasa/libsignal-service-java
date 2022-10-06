@@ -91,7 +91,7 @@ tasks.whenTaskAdded { task ->
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.18.0'
+        artifact = 'com.google.protobuf:protoc:3.23.1'
     }
     generateProtoTasks {
         all().each { task ->
