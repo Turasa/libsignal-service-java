@@ -4,7 +4,7 @@ dependencyResolutionManagement {
             version('libsignal-client', '0.21.1')
 
             // Google
-            alias('google-protobuf-javalite').to('com.google.protobuf:protobuf-javalite:3.11.4')
+            alias('google-protobuf-javalite').to('com.google.protobuf:protobuf-javalite:3.21.7')
             alias('google-libphonenumber').to('com.googlecode.libphonenumber:libphonenumber:8.12.54')
             alias('google-jsr305').to('com.google.code.findbugs:jsr305:3.0.2')
 
