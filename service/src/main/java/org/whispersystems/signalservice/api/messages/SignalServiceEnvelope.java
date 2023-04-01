@@ -51,7 +51,11 @@ public class SignalServiceEnvelope {
    * @param input The serialized and (optionally) encrypted SignalServiceEnvelope.
    */
   public SignalServiceEnvelope(byte[] input, long serverDeliveredTimestamp) throws IOException {
-    this.envelope                 = Envelope.parseFrom(input);
+    this(Envelope.parseFrom(input), serverDeliveredTimestamp);
+  }
+
+  public SignalServiceEnvelope(Envelope envelope, long serverDeliveredTimestamp) {
+    this.envelope                 = envelope;
     this.serverDeliveredTimestamp = serverDeliveredTimestamp;
   }
 
