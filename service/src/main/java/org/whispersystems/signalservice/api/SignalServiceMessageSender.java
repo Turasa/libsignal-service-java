@@ -38,6 +38,8 @@ import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemo
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
 import org.whispersystems.signalservice.api.messages.SignalServiceEditMessage;
+import org.whispersystems.signalservice.api.messages.SignalServiceGroup;
+import org.whispersystems.signalservice.api.messages.SignalServiceGroupContext;
 import org.whispersystems.signalservice.api.messages.SignalServiceGroupV2;
 import org.whispersystems.signalservice.api.messages.SignalServicePreview;
 import org.whispersystems.signalservice.api.messages.SignalServiceReceiptMessage;
@@ -108,6 +110,7 @@ import org.whispersystems.signalservice.internal.push.SignalServiceProtos.CallMe
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Content;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.DataMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.EditMessage;
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos.GroupContext;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.GroupContextV2;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.NullMessage;
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos.Preview;
@@ -661,6 +664,8 @@ public class SignalServiceMessageSender {
 
     if (message.getContacts().isPresent()) {
       content = createMultiDeviceContactsContent(message.getContacts().get().getContactsStream().asStream(), message.getContacts().get().isComplete());
+    } else if (message.getGroups().isPresent()) {
+      content = createMultiDeviceGroupsContent(message.getGroups().get().asStream());
     } else if (message.getRead().isPresent()) {
       content = createMultiDeviceReadContent(message.getRead().get());
       urgent  = true;
@@ -1009,7 +1014,14 @@ public class SignalServiceMessageSender {
     }
 
     if (message.getGroupContext().isPresent()) {
-      builder.setGroupV2(createGroupContent(message.getGroupContext().get()));
+      SignalServiceGroupContext groupContext = message.getGroupContext().get();
+      if (groupContext.getGroupV1().isPresent()) {
+        builder.setGroup(createGroupContent(groupContext.getGroupV1().get()));
+      }
+
+      if (groupContext.getGroupV2().isPresent()) {
+        builder.setGroupV2(createGroupContent(groupContext.getGroupV2().get()));
+      }
     }
 
     if (message.isEndSession()) {
@@ -1303,6 +1315,16 @@ public class SignalServiceMessageSender {
     builder.setContacts(SyncMessage.Contacts.newBuilder()
                                             .setBlob(createAttachmentPointer(contacts))
                                             .setComplete(complete));
+
+    return container.setSyncMessage(builder).build();
+  }
+
+  private Content createMultiDeviceGroupsContent(SignalServiceAttachmentStream groups) throws IOException {
+    Content.Builder     container = Content.newBuilder();
+    SyncMessage.Builder builder   = createSyncMessageBuilder();
+
+    builder.setGroups(SyncMessage.Groups.newBuilder()
+                                        .setBlob(createAttachmentPointer(groups)));
 
     return container.setSyncMessage(builder).build();
   }
@@ -1658,6 +1680,47 @@ public class SignalServiceMessageSender {
     builder.setPadding(ByteString.copyFrom(padding));
 
     return builder;
+  }
+
+  private GroupContext createGroupContent(SignalServiceGroup group) throws IOException {
+    GroupContext.Builder builder = GroupContext.newBuilder();
+    builder.setId(ByteString.copyFrom(group.getGroupId()));
+
+    if (group.getType() != SignalServiceGroup.Type.DELIVER) {
+      if      (group.getType() == SignalServiceGroup.Type.UPDATE)       builder.setType(GroupContext.Type.UPDATE);
+      else if (group.getType() == SignalServiceGroup.Type.QUIT)         builder.setType(GroupContext.Type.QUIT);
+      else if (group.getType() == SignalServiceGroup.Type.REQUEST_INFO) builder.setType(GroupContext.Type.REQUEST_INFO);
+      else                                                              throw new AssertionError("Unknown type: " + group.getType());
+
+      if (group.getName().isPresent()) {
+        builder.setName(group.getName().get());
+      }
+
+      if (group.getMembers().isPresent()) {
+        for (SignalServiceAddress address : group.getMembers().get()) {
+          if (address.getNumber().isPresent()) {
+            builder.addMembersE164(address.getNumber().get());
+
+            GroupContext.Member.Builder memberBuilder = GroupContext.Member.newBuilder();
+            memberBuilder.setE164(address.getNumber().get());
+
+            builder.addMembers(memberBuilder.build());
+          }
+        }
+      }
+
+      if (group.getAvatar().isPresent()) {
+        if (group.getAvatar().get().isStream()) {
+          builder.setAvatar(createAttachmentPointer(group.getAvatar().get().asStream()));
+        } else {
+          builder.setAvatar(createAttachmentPointer(group.getAvatar().get().asPointer()));
+        }
+      }
+    } else {
+      builder.setType(GroupContext.Type.DELIVER);
+    }
+
+    return builder.build();
   }
 
   private static GroupContextV2 createGroupContent(SignalServiceGroupV2 group) {
