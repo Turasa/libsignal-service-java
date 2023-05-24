@@ -26,6 +26,12 @@ tasks.withType(KotlinCompile).configureEach {
     }
 }
 
+tasks.named('jar') {
+    manifest {
+        attributes('Automatic-Module-Name': 'com.github.turasa.signalservice')
+    }
+}
+
 configurations {
     ideaTestFixturesImplementation { extendsFrom testFixturesImplementation; canBeConsumed false; canBeResolved true }
 }
