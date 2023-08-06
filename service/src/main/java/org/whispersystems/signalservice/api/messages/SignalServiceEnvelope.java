@@ -178,6 +178,13 @@ public class SignalServiceEnvelope {
   }
 
   /**
+   * @return The envelope's sender as a SignalServiceAddress.
+   */
+  public SignalServiceAddress getSourceAddress() {
+    return new SignalServiceAddress(ServiceId.parseOrNull(envelope.getSourceServiceId()));
+  }
+
+  /**
    * @return The envelope content type.
    */
   public int getType() {
