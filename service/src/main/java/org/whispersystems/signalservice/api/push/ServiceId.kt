@@ -197,6 +197,10 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
         }
       }
 
+      /** Parse a byte array as a PNI, regardless if it has the type prefix byte present or not. Only use this if you are certain what you're reading is a PNI. */
+      @JvmStatic
+      fun parseOrNull(bytes: ByteString): PNI? = parseOrNull(bytes.toByteArray())
+
       /** Parses a string as a PNI, regardless if the `PNI:` prefix is present or not. Only use this if you are certain that what you're reading is a PNI. */
       @JvmStatic
       @Throws(IllegalArgumentException::class)
@@ -213,6 +217,7 @@ sealed class ServiceId(val libSignalServiceId: LibSignalServiceId) {
       fun parseOrThrow(bytes: ByteString): PNI = parseOrThrow(bytes.toByteArray())
 
       /** Parses a string as a PNI, expecting that the value has a `PNI:` prefix. If it does not have the prefix (or is otherwise invalid), this will return null. */
+      @JvmStatic
       fun parsePrefixedOrNull(raw: String?): PNI? = ServiceId.parseOrNull(raw).let { if (it is PNI) it else null }
     }
 
