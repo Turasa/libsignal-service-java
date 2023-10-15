@@ -2185,7 +2185,7 @@ public class PushServiceSocket implements Closeable {
     }
 
     if (responseCode != 200 && responseCode != 202 && responseCode != 204) {
-      throw new NonSuccessfulResponseCodeException(responseCode, "Bad response: " + responseCode + " " + responseMessage);
+      throw new NonSuccessfulResponseCodeException(responseCode, "Bad response: " + responseCode + " " + responseMessage + ": " + (response.body() == null ? "" : readBodyString(response.body())));
     }
 
     return response;
