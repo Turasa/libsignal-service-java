@@ -5,7 +5,7 @@ A Java library for communicating via Signal.
 ## Unofficial fork!
 
 This library is an unofficial fork where we publish our changes to the official library (upstream).
-This fork allows using the Signal servers without GCM and provides provisioning, i.e. linking devices, and some bugfixes.
+This fork allows using the Signal servers without Google Cloud Messaging (GCM) and provides provisioning, i.e. linking devices, and some bugfixes.
 Use it at your own risk. OpenWhisperSystems is not responsible for this fork.
 
 Upstream development is now happening in the Signal-Android project: https://github.com/signalapp/Signal-Android/tree/master/libsignal/service
