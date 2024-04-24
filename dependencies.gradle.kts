@@ -28,6 +28,7 @@ dependencyResolutionManagement {
       library("mockito-core", "org.mockito:mockito-core:2.23.4")
       library("assertj-core", "org.assertj:assertj-core:3.11.1")
       library("conscrypt-openjdk-uber", "org.conscrypt:conscrypt-openjdk-uber:2.5.2")
+      library("mockk", "io.mockk:mockk:1.13.2")
     }
   }
 }
