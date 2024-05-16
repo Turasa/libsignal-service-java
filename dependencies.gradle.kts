@@ -6,7 +6,7 @@ dependencyResolutionManagement {
       // Kotlin
       version("kotlin", "1.8.10")
       library("kotlin-stdlib-jdk8", "org.jetbrains.kotlin", "kotlin-stdlib-jdk8").versionRef("kotlin")
-      library("ktlint", "org.jlleitschuh.gradle:ktlint-gradle:11.4.2")
+      library("ktlint", "org.jlleitschuh.gradle:ktlint-gradle:12.1.1")
 
       // Google
       library("google-libphonenumber", "com.googlecode.libphonenumber:libphonenumber:8.13.23")
