@@ -4,7 +4,7 @@ dependencyResolutionManagement {
       version("libsignal-client", "0.46.0")
 
       // Kotlin
-      version("kotlin", "1.8.10")
+      version("kotlin", "1.9.20")
       library("kotlin-stdlib-jdk8", "org.jetbrains.kotlin", "kotlin-stdlib-jdk8").versionRef("kotlin")
       library("ktlint", "org.jlleitschuh.gradle:ktlint-gradle:12.1.1")
 
