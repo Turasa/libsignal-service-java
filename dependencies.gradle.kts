@@ -10,7 +10,7 @@ dependencyResolutionManagement {
       library("ktlint", "org.jlleitschuh.gradle:ktlint-gradle:12.1.1")
 
       // Google
-      library("google-libphonenumber", "com.googlecode.libphonenumber:libphonenumber:8.13.23")
+      library("google-libphonenumber", "com.googlecode.libphonenumber:libphonenumber:8.13.40")
       library("google-jsr305", "com.google.code.findbugs:jsr305:3.0.2")
 
       // 1st Party
