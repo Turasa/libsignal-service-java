@@ -1,7 +1,7 @@
 dependencyResolutionManagement {
   versionCatalogs {
     create("libs") {
-      version("libsignal-client", "0.54.3")
+      version("libsignal-client", "0.55.0")
 
       // Kotlin
       version("kotlin", "1.9.20")
