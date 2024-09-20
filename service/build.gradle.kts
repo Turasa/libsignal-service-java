@@ -40,7 +40,8 @@ afterEvaluate {
   listOf(
     "runKtlintCheckOverMainSourceSet",
     "sourcesJar",
-    "runKtlintFormatOverMainSourceSet"
+    "runKtlintFormatOverMainSourceSet",
+    "sourcesJar"
   ).forEach { taskName ->
     tasks.named(taskName) {
       mustRunAfter(tasks.named("generateMainProtos"))
