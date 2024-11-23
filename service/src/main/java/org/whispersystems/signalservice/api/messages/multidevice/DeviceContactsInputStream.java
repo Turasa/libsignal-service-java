@@ -66,7 +66,7 @@ public class DeviceContactsInputStream extends ChunkedInputStream {
       avatar = Optional.of(new DeviceContactAvatar(avatarStream, avatarLength, avatarContentType));
     }
 
-    if (details.verified != null) {
+    if (details.verified != null && details.verified.identityKey != null && details.verified.destinationAci != null && details.verified.state != null) {
       try {
         if (!SignalServiceAddress.isValidAddress(details.verified.destinationAci, null)) {
           throw new InvalidMessageException("Missing Verified address!");
@@ -93,7 +93,7 @@ public class DeviceContactsInputStream extends ChunkedInputStream {
 
     if (details.profileKey != null) {
       try {
-        profileKey = Optional.ofNullable(new ProfileKey(details.profileKey.toByteArray()));
+        profileKey = Optional.of(new ProfileKey(details.profileKey.toByteArray()));
       } catch (InvalidInputException e) {
         Log.w(TAG, "Invalid profile key ignored", e);
       }
@@ -111,7 +111,9 @@ public class DeviceContactsInputStream extends ChunkedInputStream {
       inboxPosition = Optional.of(details.inboxPosition);
     }
 
-    archived = details.archived;
+    if (details.archived != null) {
+      archived = details.archived;
+    }
 
     return new DeviceContact(aci, e164, name, avatar, color, verified, profileKey, expireTimer, expireTimerVersion, inboxPosition, archived);
   }
