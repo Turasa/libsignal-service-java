@@ -14,7 +14,7 @@ kotlinx-coroutines-core = "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0"
 kotlinx-coroutines-core-jvm = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0"
 
 # Google
-google-libphonenumber = "com.googlecode.libphonenumber:libphonenumber:8.13.40"
+google-libphonenumber = "com.googlecode.libphonenumber:libphonenumber:8.13.50"
 google-jsr305 = "com.google.code.findbugs:jsr305:3.0.2"
 
 # 1st Party
