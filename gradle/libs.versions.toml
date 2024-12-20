@@ -2,8 +2,11 @@
 # ./gradlew --write-verification-metadata sha256 qa --rerun-tasks
 
 [versions]
-kotlin = "1.9.20"
+kotlin = "2.1.0"
 libsignal-client = "0.64.0"
+
+[plugins]
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
 [libraries]
 # Kotlin

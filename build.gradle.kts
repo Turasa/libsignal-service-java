@@ -1,10 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+plugins {
+  alias(libs.plugins.jetbrains.kotlin.jvm) apply false
+}
+
 val signalKotlinJvmTarget: String by rootProject.extra
 
 buildscript {
-  rootProject.extra["kotlin_version"] = "1.9.20"
-
   repositories {
     google()
     mavenCentral()
@@ -16,7 +18,6 @@ buildscript {
     }
   }
   dependencies {
-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProject.extra["kotlin_version"] as String}")
     classpath(libs.ktlint)
     classpath("com.squareup.wire:wire-gradle-plugin:4.4.3") {
       exclude(group = "com.squareup.wire", module = "wire-swift-generator")
