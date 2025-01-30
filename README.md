@@ -8,7 +8,7 @@ This library is an unofficial fork where we publish our changes to the official 
 This fork allows using the Signal servers without Google Cloud Messaging (GCM) and provides provisioning, i.e. linking devices, and some bugfixes.
 Use it at your own risk. OpenWhisperSystems is not responsible for this fork.
 
-Upstream development is now happening in the Signal-Android project: https://github.com/signalapp/Signal-Android/tree/master/libsignal/service
+Upstream development is now happening in the Signal-Android project: https://github.com/signalapp/Signal-Android/tree/main/libsignal-service
 The branch [upstream](https://github.com/Turasa/libsignal-service-java/tree/upstream) is tracking the signal-service lib changes from the Signal-Android project.
 
 The library is available on [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.turasa%22).
