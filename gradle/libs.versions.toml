@@ -31,3 +31,4 @@ jackson-module-kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:2.12
 square-okhttp3 = "com.squareup.okhttp3:okhttp:4.12.0"
 square-okio = "com.squareup.okio:okio:3.9.0"
 rxjava3-rxjava = "io.reactivex.rxjava3:rxjava:3.0.13"
+rxjava3-rxkotlin = "io.reactivex.rxjava3:rxkotlin:3.0.1"
