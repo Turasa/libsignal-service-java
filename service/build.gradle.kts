@@ -13,7 +13,7 @@ plugins {
   id("maven-publish")
   id("signing")
   id("idea")
-  id("org.jlleitschuh.gradle.ktlint")
+  alias(libs.plugins.ktlint)
   id("com.squareup.wire")
 }
 

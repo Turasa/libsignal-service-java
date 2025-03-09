@@ -9,8 +9,12 @@ val signalKotlinJvmTarget: String by rootProject.extra
 plugins {
   id("java-library")
   id("org.jetbrains.kotlin.jvm")
-  id("org.jlleitschuh.gradle.ktlint")
+  alias(libs.plugins.ktlint)
   id("com.squareup.wire")
+}
+
+ktlint {
+  version.set("1.2.1")
 }
 
 java {

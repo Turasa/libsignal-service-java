@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -18,7 +19,6 @@ buildscript {
     }
   }
   dependencies {
-    classpath(libs.ktlint)
     classpath("com.squareup.wire:wire-gradle-plugin:4.4.3") {
       exclude(group = "com.squareup.wire", module = "wire-swift-generator")
       exclude(group = "com.squareup.wire", module = "wire-grpc-client")
@@ -35,8 +35,8 @@ apply(from = "${rootDir}/constants.gradle.kts")
 allprojects {
   // Needed because otherwise the kapt task defaults to jvmTarget 17, which "poisons the well" and requires us to bump up too
   tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-      jvmTarget = signalKotlinJvmTarget
+    compilerOptions {
+      jvmTarget = JvmTarget.fromTarget(signalKotlinJvmTarget)
     }
   }
   tasks.withType<Jar>().configureEach {
