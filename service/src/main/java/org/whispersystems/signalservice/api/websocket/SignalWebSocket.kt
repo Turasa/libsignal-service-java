@@ -43,8 +43,6 @@ sealed class SignalWebSocket(
   private val _state: BehaviorSubject<WebSocketConnectionState> = BehaviorSubject.createDefault(WebSocketConnectionState.DISCONNECTED)
   protected var disposable: CompositeDisposable = CompositeDisposable()
 
-  private var canConnect = false
-
   var shouldSendKeepAlives: Boolean = true
     set(value) {
       field = value
@@ -59,7 +57,6 @@ sealed class SignalWebSocket(
    */
   @Synchronized
   fun connect() {
-    canConnect = true
     getWebSocket()
   }
 
@@ -68,7 +65,6 @@ sealed class SignalWebSocket(
    */
   @Synchronized
   fun disconnect() {
-    canConnect = false
     disconnectInternal()
   }
 
@@ -88,7 +84,7 @@ sealed class SignalWebSocket(
   @Synchronized
   @Throws(IOException::class)
   fun sendKeepAlive() {
-    if (canConnect) {
+    if (connection != null) {
       getWebSocket().sendKeepAlive()
     }
   }
@@ -117,10 +113,6 @@ sealed class SignalWebSocket(
   @Synchronized
   @Throws(WebSocketUnavailableException::class)
   protected fun getWebSocket(): WebSocketConnection {
-    if (!canConnect) {
-      throw WebSocketUnavailableException()
-    }
-
     if (connection == null || connection?.isDead() == true) {
       disposable.dispose()
 
@@ -142,7 +134,7 @@ sealed class SignalWebSocket(
 
   @Synchronized
   fun forceNewWebSocket() {
-    Log.i(TAG, "Forcing new WebSockets  connection: ${connection?.name ?: "[null]"} canConnect: $canConnect")
+    Log.i(TAG, "Forcing new WebSockets  connection: ${connection?.name ?: "[null]"}")
     disconnectInternal()
   }
 
