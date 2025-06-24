@@ -35,10 +35,6 @@ public class DeviceGroupsInputStream extends ChunkedInputStream {
 
     GroupDetails details = GroupDetails.ADAPTER.decode(detailsSerialized);
 
-    if (details.id == null) {
-      throw new IOException("ID missing on group record!");
-    }
-
     byte[]                                  id              = details.id.toByteArray();
     Optional<String>                        name            = Optional.ofNullable(details.name);
     List<GroupDetails.Member>               members         = details.members;
@@ -77,6 +73,13 @@ public class DeviceGroupsInputStream extends ChunkedInputStream {
 
     if (details.archived != null) {
       archived = details.archived;
+    }
+
+    if (details.id == null) {
+      if (avatar.isPresent()) {
+        avatar.get().getInputStream().readAllBytes();
+      }
+      throw new IOException("ID missing on group record!");
     }
 
     return new DeviceGroup(id, name, addressMembers, avatar, active, expirationTimer, color, blocked, inboxPosition, archived);
