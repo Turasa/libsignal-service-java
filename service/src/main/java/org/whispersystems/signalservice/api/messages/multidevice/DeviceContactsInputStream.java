@@ -42,10 +42,6 @@ public class DeviceContactsInputStream extends ChunkedInputStream {
 
     ContactDetails details = ContactDetails.ADAPTER.decode(detailsSerialized);
 
-    if (!SignalServiceAddress.isValidAddress(details.aci, details.number)) {
-      throw new IOException("Missing contact address!");
-    }
-
     Optional<ACI>                 aci                = Optional.ofNullable(ACI.parseOrNull(details.aci));
     Optional<String>              e164               = Optional.ofNullable(details.number);
     Optional<String>              name               = Optional.ofNullable(details.name);
@@ -72,6 +68,13 @@ public class DeviceContactsInputStream extends ChunkedInputStream {
 
     if (details.inboxPosition != null) {
       inboxPosition = Optional.of(details.inboxPosition);
+    }
+
+    if (details.aci == null && details.number == null) {
+      if (avatar.isPresent()) {
+        avatar.get().getInputStream().readAllBytes();
+      }
+      throw new IOException("Missing contact address!");
     }
 
     return new DeviceContact(aci, e164, name, avatar, expireTimer, expireTimerVersion, inboxPosition);
