@@ -3,7 +3,7 @@
 
 [versions]
 kotlin = "2.1.0"
-libsignal-client = "0.78.2"
+libsignal-client = "0.79.0"
 ktlint = "12.1.1"
 
 [plugins]
