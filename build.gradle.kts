@@ -18,7 +18,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath("com.squareup.wire:wire-gradle-plugin:4.4.3") {
+    classpath("com.squareup.wire:wire-gradle-plugin:4.9.11") {
       exclude(group = "com.squareup.wire", module = "wire-swift-generator")
       exclude(group = "com.squareup.wire", module = "wire-grpc-client")
       exclude(group = "com.squareup.wire", module = "wire-grpc-jvm")
