@@ -2,6 +2,13 @@ dependencyResolutionManagement {
   repositories {
     mavenCentral()
     mavenLocal()
+    maven {
+      name = "SignalBuildArtifacts"
+      url = uri("https://build-artifacts.signal.org/libraries/maven/")
+      content {
+        includeGroupByRegex("org\\.signal.*")
+      }
+    }
   }
   versionCatalogs {
     // libs.versions.toml is automatically registered.
