@@ -5,6 +5,8 @@
 kotlin = "2.1.0"
 libsignal-client = "0.86.8"
 ktlint = "14.0.1"
+javaVersion = "17"
+kotlinJvmTarget = "17"
 
 [plugins]
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

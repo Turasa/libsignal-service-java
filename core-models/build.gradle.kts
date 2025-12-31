@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-val signalJavaVersion: JavaVersion by rootProject.extra
-val signalKotlinJvmTarget: String by rootProject.extra
-
 plugins {
   id("java-library")
   id("org.jetbrains.kotlin.jvm")
@@ -17,13 +14,13 @@ ktlint {
 }
 
 java {
-  sourceCompatibility = signalJavaVersion
-  targetCompatibility = signalJavaVersion
+  sourceCompatibility = JavaVersion.toVersion(libs.versions.javaVersion.get())
+  targetCompatibility = JavaVersion.toVersion(libs.versions.javaVersion.get())
 }
 
 kotlin {
   jvmToolchain {
-    languageVersion = JavaLanguageVersion.of(signalKotlinJvmTarget)
+    languageVersion = JavaLanguageVersion.of(libs.versions.kotlinJvmTarget.get())
   }
 }
 

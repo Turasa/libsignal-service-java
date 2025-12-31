@@ -5,8 +5,6 @@ plugins {
   alias(libs.plugins.jetbrains.kotlin.jvm) apply false
 }
 
-val signalKotlinJvmTarget: String by rootProject.extra
-
 buildscript {
   repositories {
     google()
@@ -33,12 +31,6 @@ buildscript {
 apply(from = "${rootDir}/constants.gradle.kts")
 
 allprojects {
-  // Needed because otherwise the kapt task defaults to jvmTarget 17, which "poisons the well" and requires us to bump up too
-  tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions {
-      jvmTarget = JvmTarget.fromTarget(signalKotlinJvmTarget)
-    }
-  }
   tasks.withType<Jar>().configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
   }
