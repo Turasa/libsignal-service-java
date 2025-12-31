@@ -21,5 +21,8 @@ dependencyResolutionManagement {
 include("libsignal-service")
 project(":libsignal-service").projectDir = file("service")
 
-include(":core-util-jvm")
-include(":core-models")
+include(":core:util-jvm")
+project(":core:util-jvm").projectDir = file("core-util-jvm")
+
+include(":core:models")
+project(":core:models").projectDir = file("core-models")

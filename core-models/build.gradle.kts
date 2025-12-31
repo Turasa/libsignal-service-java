@@ -27,5 +27,5 @@ kotlin {
 dependencies {
   implementation(libs.libsignal.client)
   implementation(libs.square.okio)
-  implementation(project(":core-util-jvm"))
+  implementation(project(":core:util-jvm"))
 }

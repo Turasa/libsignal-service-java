@@ -49,7 +49,7 @@ wire {
 }
 
 tasks.runKtlintCheckOverMainSourceSet {
-  dependsOn(":core-util-jvm:generateMainProtos")
+  dependsOn(":core:util-jvm:generateMainProtos")
 }
 
 val sourceSets = extensions.getByName("sourceSets") as SourceSetContainer
