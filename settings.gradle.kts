@@ -24,5 +24,5 @@ project(":libsignal-service").projectDir = file("service")
 include(":core:util-jvm")
 project(":core:util-jvm").projectDir = file("core-util-jvm")
 
-include(":core:models")
-project(":core:models").projectDir = file("core-models")
+include(":core:models-jvm")
+project(":core:models-jvm").projectDir = file("core-models-jvm")
