@@ -1305,6 +1305,14 @@ public class SignalServiceMessageSender {
                                .build());
     }
 
+    if (message.getAdminDelete().isPresent()) {
+      SignalServiceDataMessage.AdminDelete adminDelete = message.getAdminDelete().get();
+      builder.adminDelete(new DataMessage.AdminDelete.Builder()
+                               .targetAuthorAciBinary(adminDelete.getTargetAuthor().toByteString())
+                               .targetSentTimestamp(adminDelete.getTargetSentTimestamp())
+                               .build());
+    }
+
     builder.timestamp(message.getTimestamp());
 
     return builder;
