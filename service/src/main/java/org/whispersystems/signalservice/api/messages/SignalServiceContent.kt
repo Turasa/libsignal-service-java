@@ -1520,10 +1520,17 @@ class SignalServiceContent {
 
     private fun createReaction(content: DataMessage): SignalServiceDataMessage.Reaction? {
       val reaction = content.reaction
-      if (reaction?.emoji == null || reaction.targetAuthorAci == null || reaction.targetSentTimestamp == null) {
+      if (reaction?.emoji == null || reaction.targetSentTimestamp == null) {
         return null
       }
-      val aci = ACI.parseOrNull(reaction.targetAuthorAci)
+      // Try binary ACI first (used by Android), then fall back to string ACI (used by Desktop)
+      val aci = if (reaction.targetAuthorAciBinary != null) {
+        ACI.parseOrNull(reaction.targetAuthorAciBinary)
+      } else if (reaction.targetAuthorAci != null) {
+        ACI.parseOrNull(reaction.targetAuthorAci)
+      } else {
+        null
+      }
       if (aci == null) {
         Log.w(TAG, "Cannot parse author UUID on reaction")
         return null
