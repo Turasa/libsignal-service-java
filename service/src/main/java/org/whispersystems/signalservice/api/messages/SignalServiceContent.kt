@@ -908,25 +908,21 @@ class SignalServiceContent {
         } else {
           Optional.empty()
         }
+        val serviceId = ServiceId.parseOrNull(
+          sentContent.destinationServiceId,
+          sentContent.destinationServiceIdBinary
+        )
         val address =
-          if (sentContent.destinationServiceId != null && ServiceId.parseOrNull(
-              sentContent.destinationServiceId
-            ) != null
-          ) {
+          if (serviceId != null) {
             Optional.of(
-              SignalServiceAddress(
-                ServiceId.parseOrThrow(
-                  sentContent.destinationServiceId
-                ),
-                sentContent.destinationE164
-              )
+              SignalServiceAddress(serviceId)
             )
           } else {
             Optional.empty()
           }
         val recipientManifest = sentContent.storyMessageRecipients
           .stream()
-          .filter { it.destinationServiceId != null }
+          .filter { it.destinationServiceId != null || it.destinationServiceIdBinary != null }
           .map { storyMessageRecipient: StoryMessageRecipient ->
             createSignalServiceStoryMessageRecipient(
               storyMessageRecipient
@@ -943,9 +939,9 @@ class SignalServiceContent {
           throw InvalidMessageStructureException("SyncMessage missing destination, group ID, and recipient manifest!")
         }
         for (status in sentContent.unidentifiedStatus) {
-          if (SignalServiceAddress.isValidAddress(status.destinationServiceId, null)) {
-            unidentifiedStatuses[ServiceId.parseOrNull(status.destinationServiceId)] =
-              status.unidentified
+          val serviceId = ServiceId.parseOrNull(status.destinationServiceId, status.destinationServiceIdBinary)
+          if (serviceId != null) {
+            unidentifiedStatuses[serviceId] = status.unidentified
           } else {
             Log.w(
               TAG,
@@ -973,7 +969,7 @@ class SignalServiceContent {
       if (content.read.isNotEmpty()) {
         val readMessages: MutableList<ReadMessage> = LinkedList()
         for (read in content.read) {
-          val aci = ACI.parseOrNull(read.senderAci)
+          val aci = ACI.parseOrNull(read.senderAci, read.senderAciBinary)
           if (aci != null && read.timestamp != null) {
             readMessages.add(ReadMessage(aci, read.timestamp))
           } else {
@@ -985,7 +981,7 @@ class SignalServiceContent {
       if (content.viewed.isNotEmpty()) {
         val viewedMessages: MutableList<ViewedMessage> = LinkedList()
         for (viewed in content.viewed) {
-          val aci = ACI.parseOrNull(viewed.senderAci)
+          val aci = ACI.parseOrNull(viewed.senderAci, viewed.senderAciBinary)
           if (aci != null && viewed.timestamp != null) {
             viewedMessages.add(ViewedMessage(aci, viewed.timestamp))
           } else {
@@ -995,9 +991,10 @@ class SignalServiceContent {
         return SignalServiceSyncMessage.forViewed(viewedMessages)
       }
       if (content.viewOnceOpen != null) {
-        val aci = ACI.parseOrNull(content.viewOnceOpen.senderAci)
+        val viewOnceOpen = content.viewOnceOpen
+        val aci = ACI.parseOrNull(viewOnceOpen.senderAci, viewOnceOpen.senderAciBinary)
         return if (aci != null) {
-          val timerRead = ViewOnceOpenMessage(aci, content.viewOnceOpen.timestamp ?: 0)
+          val timerRead = ViewOnceOpenMessage(aci, viewOnceOpen.timestamp ?: 0)
           SignalServiceSyncMessage.forViewOnceOpen(timerRead)
         } else {
           throw InvalidMessageStructureException("ViewOnceOpen message has no sender!")
@@ -1005,14 +1002,11 @@ class SignalServiceContent {
       }
       if (content.verified != null) {
         val verified = content.verified
-        if (verified.destinationAci == null || !SignalServiceAddress.isValidAddress(verified.destinationAci)) {
-          throw InvalidMessageStructureException("Verified message has no sender!")
-        }
+        val aci = ACI.parseOrNull(verified.destinationAci, verified.destinationAciBinary)
+          ?: throw InvalidMessageStructureException("Verified message has no sender!")
         try {
           val destination = SignalServiceAddress(
-            ServiceId.parseOrThrow(
-              verified.destinationAci
-            )
+            aci
           )
           if (verified.identityKey == null) {
             throw InvalidMessageStructureException("Verified message has no identity key!")
@@ -1121,7 +1115,7 @@ class SignalServiceContent {
             type
           )
         } else {
-          val aci = ACI.parseOrNull(content.messageRequestResponse.threadAci)
+          val aci = ACI.parseOrNull(content.messageRequestResponse.threadAci, content.messageRequestResponse.threadAciBinary)
           if (aci != null) {
             MessageRequestResponseMessage.forIndividual(aci, type)
           } else {
@@ -1223,11 +1217,13 @@ class SignalServiceContent {
     }
 
     private fun createSignalServiceStoryMessageRecipient(storyMessageRecipient: StoryMessageRecipient): SignalServiceStoryMessageRecipient {
+      val serviceId = ServiceId.parseOrNull(
+        storyMessageRecipient.destinationServiceId,
+        storyMessageRecipient.destinationServiceIdBinary,
+      ) ?: throw InvalidMessageStructureException("StoryMessageRecipient is missing a valid destination service ID!")
       return SignalServiceStoryMessageRecipient(
         SignalServiceAddress(
-          ServiceId.parseOrThrow(
-            storyMessageRecipient.destinationServiceId ?: ""
-          )
+          serviceId
         ),
         storyMessageRecipient.distributionListIds,
         java.lang.Boolean.TRUE == storyMessageRecipient.isAllowedToReply
@@ -1414,7 +1410,7 @@ class SignalServiceContent {
           )
         )
       }
-      val author = ACI.parseOrNull(quote.authorAci)
+      val author = ACI.parseOrNull(quote.authorAci, quote.authorAciBinary)
       return if (author != null) {
         SignalServiceDataMessage.Quote(
           quote.id ?: 0,
@@ -1467,11 +1463,12 @@ class SignalServiceContent {
       }
       val mentions: MutableList<Mention> = LinkedList()
       for (bodyRange in bodyRanges) {
-        if (bodyRange.mentionAci != null) {
+        val aci = ACI.parseOrNull(bodyRange.mentionAci, bodyRange.mentionAciBinary)
+        if (aci != null) {
           try {
             mentions.add(
               Mention(
-                ServiceId.parseOrThrow(bodyRange.mentionAci),
+                aci,
                 bodyRange.start ?: 0,
                 bodyRange.length ?: 0
               )
@@ -1523,14 +1520,7 @@ class SignalServiceContent {
       if (reaction?.emoji == null || reaction.targetSentTimestamp == null) {
         return null
       }
-      // Try binary ACI first (used by Android), then fall back to string ACI (used by Desktop)
-      val aci = if (reaction.targetAuthorAciBinary != null) {
-        ACI.parseOrNull(reaction.targetAuthorAciBinary)
-      } else if (reaction.targetAuthorAci != null) {
-        ACI.parseOrNull(reaction.targetAuthorAci)
-      } else {
-        null
-      }
+      val aci = ACI.parseOrNull(reaction.targetAuthorAci, reaction.targetAuthorAciBinary)
       if (aci == null) {
         Log.w(TAG, "Cannot parse author UUID on reaction")
         return null
@@ -1587,7 +1577,7 @@ class SignalServiceContent {
       if (content.storyContext == null) {
         return null
       }
-      val aci = ACI.parseOrNull(content.storyContext.authorAci)
+      val aci = ACI.parseOrNull(content.storyContext.authorAci, content.storyContext.authorAciBinary)
         ?: throw InvalidMessageStructureException("Invalid author ACI!")
       return SignalServiceDataMessage.StoryContext(aci, content.storyContext.sentTimestamp ?: 0)
     }

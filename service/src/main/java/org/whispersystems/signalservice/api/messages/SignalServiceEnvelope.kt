@@ -8,7 +8,6 @@ package org.whispersystems.signalservice.api.messages
 import okio.ByteString
 import org.signal.core.util.Base64
 import org.signal.core.models.ServiceId
-import org.signal.core.models.ServiceId.Companion.parseOrNull
 import org.whispersystems.signalservice.api.push.SignalServiceAddress
 import org.whispersystems.signalservice.internal.push.Envelope
 import org.whispersystems.signalservice.internal.push.Envelope.Type.Companion.fromValue
@@ -205,7 +204,7 @@ class SignalServiceEnvelope {
     get() = proto.type === Envelope.Type.PLAINTEXT_CONTENT
 
   val destinationServiceId: ServiceId?
-    get() = parseOrNull(proto.destinationServiceId)
+    get() = ServiceId.parseOrNull(proto.destinationServiceId, proto.destinationServiceIdBinary)
   val isUrgent: Boolean
     get() = proto.urgent != null && proto.urgent
 
@@ -265,7 +264,7 @@ class SignalServiceEnvelope {
         throw AssertionError(e)
       }
       val sourceServiceId = if (proto.sourceServiceId != null) {
-        parseOrNull(
+        ServiceId.parseOrNull(
           proto.sourceServiceId
         )
       } else {
