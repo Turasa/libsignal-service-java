@@ -20,4 +20,3 @@ ktlint_standard_unnecessary-parentheses-before-trailing-lambda = disabled
 ktlint_standard_value-parameter-comment = disabled
 ktlint_standard_class-signature = disabled
 ktlint_standard_function-expression-body = disabled
-ktlint = disabled
