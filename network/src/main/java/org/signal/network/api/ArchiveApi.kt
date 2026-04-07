@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 Signal Messenger, LLC
+ * Copyright 2026 Signal Messenger, LLC
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-package org.whispersystems.signalservice.api.archive
+package org.signal.network.api
 
 import org.signal.core.models.ServiceId.ACI
 import org.signal.core.models.backup.BackupKey
@@ -18,7 +18,21 @@ import org.signal.libsignal.zkgroup.backups.BackupAuthCredential
 import org.signal.libsignal.zkgroup.backups.BackupAuthCredentialRequestContext
 import org.signal.libsignal.zkgroup.backups.BackupAuthCredentialResponse
 import org.whispersystems.signalservice.api.NetworkResult
+import org.whispersystems.signalservice.api.archive.ArchiveCredentialPresentation
+import org.whispersystems.signalservice.api.archive.ArchiveGetBackupInfoResponse
+import org.whispersystems.signalservice.api.archive.ArchiveGetMediaItemsResponse
 import org.whispersystems.signalservice.api.archive.ArchiveGetMediaItemsResponse.StoredMediaObject
+import org.whispersystems.signalservice.api.archive.ArchiveKeyRotationLimitResponse
+import org.whispersystems.signalservice.api.archive.ArchiveMediaRequest
+import org.whispersystems.signalservice.api.archive.ArchiveMediaResponse
+import org.whispersystems.signalservice.api.archive.ArchiveServiceAccess
+import org.whispersystems.signalservice.api.archive.ArchiveServiceCredentialsResponse
+import org.whispersystems.signalservice.api.archive.ArchiveSetBackupIdRequest
+import org.whispersystems.signalservice.api.archive.ArchiveSetPublicKeyRequest
+import org.whispersystems.signalservice.api.archive.BatchArchiveMediaRequest
+import org.whispersystems.signalservice.api.archive.BatchArchiveMediaResponse
+import org.whispersystems.signalservice.api.archive.DeleteArchivedMediaRequest
+import org.whispersystems.signalservice.api.archive.GetArchiveCdnCredentialsResponse
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachment
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
 import org.whispersystems.signalservice.internal.delete
@@ -289,13 +303,14 @@ class ArchiveApi(
    * - 200: Success
    * - 400: Bad request, or made on authenticated channel
    * - 403: Forbidden
+   * - 413: The media is too large
    * - 429: Rate-limited
    */
-  fun getMediaUploadForm(aci: ACI, archiveServiceAccess: ArchiveServiceAccess<MediaRootBackupKey>): NetworkResult<AttachmentUploadForm> {
+  fun getMediaUploadForm(aci: ACI, archiveServiceAccess: ArchiveServiceAccess<MediaRootBackupKey>, uploadLength: Long): NetworkResult<AttachmentUploadForm> {
     return getCredentialPresentation(aci, archiveServiceAccess)
       .map { it.toArchiveCredentialPresentation().toHeaders() }
       .then { headers ->
-        val request = WebSocketRequestMessage.get("/v1/archives/media/upload/form", headers)
+        val request = WebSocketRequestMessage.get("/v1/archives/media/upload/form?uploadLength=$uploadLength", headers)
         NetworkResult.fromWebSocketRequest(unauthWebSocket, request, AttachmentUploadForm::class)
       }
   }
