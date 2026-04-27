@@ -461,7 +461,7 @@ class LibSignalChatConnection(
           },
           onFailure = { throwable ->
             Log.w(TAG, "$name [sendKeepAlive] Failure:", throwable)
-            state.onNext(WebSocketConnectionState.DISCONNECTED)
+            disconnect()
           }
         )
     }

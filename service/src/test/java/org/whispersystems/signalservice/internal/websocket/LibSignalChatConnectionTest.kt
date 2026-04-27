@@ -259,12 +259,13 @@ class LibSignalChatConnectionTest {
   }
 
   // Test keepAlive that fails at the transport layer (send() throws),
-  // which transitions from CONNECTED -> DISCONNECTED.
+  // which disconnects the underlying chat connection before transitioning to DISCONNECTED.
   @Test
   fun keepAliveConnectionFailure() {
     val connectionFailure = RuntimeException("Sending keep-alive failed")
 
     val keepAliveFailureLatch = CountDownLatch(1)
+    disconnectLatch = CountDownLatch(1)
 
     every { chatConnection.send(any()) } answers {
       delay {
@@ -281,15 +282,22 @@ class LibSignalChatConnectionTest {
     connection.sendKeepAlive()
 
     keepAliveFailureLatch.await(100, TimeUnit.MILLISECONDS)
+    disconnectLatch!!.await(100, TimeUnit.MILLISECONDS)
+    observer.awaitCount(3)
 
     observer.assertNotComplete()
     observer.assertValues(
       // We start in the connected state
       WebSocketConnectionState.CONNECTED,
-      // Disconnects as a result of keep-alive failure
+      // Starts an underlying disconnect as a result of keep-alive failure
+      WebSocketConnectionState.DISCONNECTING,
+      // Disconnects once libsignal confirms the connection was interrupted
       WebSocketConnectionState.DISCONNECTED
     )
     observer.assertNoConsecutiveDuplicates()
+    verify(exactly = 1) {
+      chatConnection.disconnect()
+    }
     verify(exactly = 0) {
       healthMonitor.onKeepAliveResponse(any(), any())
       healthMonitor.onMessageError(any(), any())
