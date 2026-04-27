@@ -1056,10 +1056,6 @@ public class SignalServiceMessageSender {
       builder.groupV2(createGroupContent(message.getGroupContext().get()));
     }
 
-    if (message.isEndSession()) {
-      builder.flags(DataMessage.Flags.END_SESSION.getValue());
-    }
-
     if (message.isExpirationUpdate()) {
       builder.flags(DataMessage.Flags.EXPIRATION_TIMER_UPDATE.getValue());
     }
