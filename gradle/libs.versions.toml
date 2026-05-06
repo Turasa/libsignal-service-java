@@ -3,7 +3,7 @@
 
 [versions]
 kotlin = "2.1.0"
-libsignal-client = "0.93.1"
+libsignal-client = "0.93.2"
 ktlint = "14.2.0"
 javaVersion = "17"
 kotlinJvmTarget = "17"
