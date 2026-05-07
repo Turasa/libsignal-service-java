@@ -54,6 +54,7 @@ class LibSignalChatConnectionTest {
     clearAllMocks()
     every { healthMonitor.onMessageError(any(), any()) }
     every { healthMonitor.onKeepAliveResponse(any(), any()) }
+    every { healthMonitor.onReceivedAlerts(any(), any()) }
 
     // NB: We provide default success behavior mocks here to cut down on boilerplate later, but it is
     //  expected that some tests will override some of these to test failures.

@@ -674,6 +674,7 @@ class LibSignalChatConnection(
       if (alerts.isNotEmpty()) {
         Log.i(TAG, "$name Received ${alerts.size} alerts from the server")
       }
+      healthMonitor.onReceivedAlerts(alerts, isIdentifiedWebSocket = chat is AuthenticatedChatConnection)
     }
   }
 }
