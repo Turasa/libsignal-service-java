@@ -12,7 +12,6 @@ import org.signal.libsignal.net.MultiRecipientSendAuthorization
 import org.signal.libsignal.net.MultiRecipientSendFailure
 import org.signal.libsignal.net.RequestResult
 import org.signal.libsignal.net.UnauthMessagesService
-import org.signal.libsignal.net.getOrError
 import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.crypto.SealedSenderAccess
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
@@ -79,9 +78,9 @@ class MessageApi(
    */
   fun sendGroupMessage(body: ByteArray, auth: MultiRecipientSendAuthorization, timestamp: Long, online: Boolean, urgent: Boolean): RequestResult<MultiRecipientMessageResponse, MultiRecipientSendFailure> {
     return runBlocking {
-      unauthWebSocket.runCatchingWithUnauthChatConnection { chatConnection ->
+      unauthWebSocket.runCatchingWithChatConnection { chatConnection ->
         UnauthMessagesService(chatConnection).sendMultiRecipientMessage(body, timestamp, auth, online, urgent)
-      }.getOrError()
+      }
     }
   }
 

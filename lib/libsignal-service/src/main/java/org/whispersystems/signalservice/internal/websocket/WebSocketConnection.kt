@@ -6,6 +6,7 @@ import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 import java.io.IOException
 import java.util.Optional
 import java.util.concurrent.TimeoutException
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -42,6 +43,10 @@ interface WebSocketConnection {
 
   @Throws(IOException::class)
   fun sendRequest(request: WebSocketRequestMessage, timeoutSeconds: Long): Single<WebsocketResponse>
+
+  suspend fun sendRequestSuspend(request: WebSocketRequestMessage, timeout: Duration = DEFAULT_SEND_TIMEOUT): WebsocketResponse {
+    throw UnsupportedOperationException("This connection does not support suspend sendRequest")
+  }
 
   @Throws(IOException::class)
   fun sendKeepAlive()

@@ -115,7 +115,7 @@ class ProfileApi(
    * - 404: Recipient is not a registered Signal user
    * - 429: Rate-limited
    */
-  fun getVersionedProfileAndCredential(aci: ServiceId.ACI, profileKey: ProfileKey, sealedSenderAccess: SealedSenderAccess?): NetworkResult<Pair<SignalServiceProfile, ExpiringProfileKeyCredential?>> {
+  suspend fun getVersionedProfileAndCredential(aci: ServiceId.ACI, profileKey: ProfileKey, sealedSenderAccess: SealedSenderAccess?): NetworkResult<Pair<SignalServiceProfile, ExpiringProfileKeyCredential?>> {
     val profileVersion = profileKey.getProfileKeyVersion(aci.libSignalAci).serialize()
     val profileRequestContext = clientZkProfileOperations.createProfileKeyCredentialRequestContext(SecureRandom(), aci.libSignalAci, profileKey)
     val serializedProfileRequest = Hex.toStringCondensed(profileRequestContext.request.serialize())
@@ -124,12 +124,12 @@ class ProfileApi(
     val converter = ProfileAndCredentialResponseConverter(clientZkProfileOperations, profileRequestContext)
 
     return if (sealedSenderAccess == null) {
-      NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) }
+      NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) }
     } else {
-      NetworkResult.fromWebSocket(converter) { unauthWebSocket.request(request, sealedSenderAccess) }
-        .fallback(
+      NetworkResult.fromWebSocketSuspend(converter) { unauthWebSocket.requestSuspend(request, sealedSenderAccess) }
+        .fallbackSuspend(
           predicate = { it is NetworkResult.StatusCodeError && it.code == 401 },
-          fallback = { NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) } }
+          fallback = { NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) } }
         )
     }
   }
@@ -142,7 +142,7 @@ class ProfileApi(
    * - 404: Recipient is not a registered Signal user
    * - 429: Rate-limited
    */
-  fun getVersionedProfile(aci: ServiceId.ACI, profileKey: ProfileKey, sealedSenderAccess: SealedSenderAccess?): NetworkResult<SignalServiceProfile> {
+  suspend fun getVersionedProfile(aci: ServiceId.ACI, profileKey: ProfileKey, sealedSenderAccess: SealedSenderAccess?): NetworkResult<SignalServiceProfile> {
     val profileKeyIdentifier = profileKey.getProfileKeyVersion(aci.libSignalAci)
     val profileVersion = profileKeyIdentifier.serialize()
 
@@ -150,12 +150,12 @@ class ProfileApi(
     val converter = NetworkResult.DefaultWebSocketConverter(SignalServiceProfile::class)
 
     return if (sealedSenderAccess == null) {
-      NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) }
+      NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) }
     } else {
-      NetworkResult.fromWebSocket(converter) { unauthWebSocket.request(request, sealedSenderAccess) }
-        .fallback(
+      NetworkResult.fromWebSocketSuspend(converter) { unauthWebSocket.requestSuspend(request, sealedSenderAccess) }
+        .fallbackSuspend(
           predicate = { it is NetworkResult.StatusCodeError && it.code == 401 },
-          fallback = { NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) } }
+          fallback = { NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) } }
         )
     }
   }
@@ -168,17 +168,17 @@ class ProfileApi(
    * - 404: Recipient is not a registered Signal user
    * - 429: Rate-limited
    */
-  fun getUnversionedProfile(serviceId: ServiceId, sealedSenderAccess: SealedSenderAccess?): NetworkResult<SignalServiceProfile> {
+  suspend fun getUnversionedProfile(serviceId: ServiceId, sealedSenderAccess: SealedSenderAccess?): NetworkResult<SignalServiceProfile> {
     val request = WebSocketRequestMessage.get("/v1/profile/$serviceId")
     val converter = NetworkResult.DefaultWebSocketConverter(SignalServiceProfile::class)
 
     return if (sealedSenderAccess == null) {
-      NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) }
+      NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) }
     } else {
-      NetworkResult.fromWebSocket(converter) { unauthWebSocket.request(request, sealedSenderAccess) }
-        .fallback(
+      NetworkResult.fromWebSocketSuspend(converter) { unauthWebSocket.requestSuspend(request, sealedSenderAccess) }
+        .fallbackSuspend(
           predicate = { it is NetworkResult.StatusCodeError && it.code == 401 },
-          fallback = { NetworkResult.fromWebSocket(converter) { authWebSocket.request(request) } }
+          fallback = { NetworkResult.fromWebSocketSuspend(converter) { authWebSocket.requestSuspend(request) } }
         )
     }
   }

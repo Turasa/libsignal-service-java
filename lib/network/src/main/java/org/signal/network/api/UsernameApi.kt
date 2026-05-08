@@ -10,7 +10,6 @@ import org.signal.core.models.ServiceId
 import org.signal.libsignal.net.LookUpUsernameLinkFailure
 import org.signal.libsignal.net.RequestResult
 import org.signal.libsignal.net.UnauthUsernamesService
-import org.signal.libsignal.net.getOrError
 import org.signal.libsignal.usernames.Username
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
 import java.util.UUID
@@ -29,9 +28,9 @@ class UsernameApi(private val unauthWebSocket: SignalWebSocket.UnauthenticatedWe
    */
   fun getAciByUsername(username: Username): RequestResult<ServiceId.ACI?, Nothing> {
     return runBlocking {
-      unauthWebSocket.runCatchingWithUnauthChatConnection { chatConnection ->
+      unauthWebSocket.runCatchingWithChatConnection { chatConnection ->
         UnauthUsernamesService(chatConnection).lookUpUsernameHash(username.hash)
-      }.getOrError().map { it?.let { ServiceId.ACI.fromLibSignal(it) } }
+      }.map { it?.let { ServiceId.ACI.fromLibSignal(it) } }
     }
   }
 
@@ -43,9 +42,9 @@ class UsernameApi(private val unauthWebSocket: SignalWebSocket.UnauthenticatedWe
    */
   fun getDecryptedUsernameFromLinkServerIdAndEntropy(serverId: UUID, entropy: ByteArray): RequestResult<Username?, LookUpUsernameLinkFailure> {
     return runBlocking {
-      unauthWebSocket.runCatchingWithUnauthChatConnection { chatConnection ->
+      unauthWebSocket.runCatchingWithChatConnection { chatConnection ->
         UnauthUsernamesService(chatConnection).lookUpUsernameLink(serverId, entropy)
-      }.getOrError()
+      }
     }
   }
 }

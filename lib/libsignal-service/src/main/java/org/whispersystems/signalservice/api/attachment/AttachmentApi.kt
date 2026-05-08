@@ -8,10 +8,8 @@ package org.whispersystems.signalservice.api.attachment
 import kotlinx.coroutines.runBlocking
 import org.signal.core.util.logging.Log
 import org.signal.libsignal.net.AuthMessagesService
-import org.signal.libsignal.net.AuthenticatedChatConnection
 import org.signal.libsignal.net.RequestResult
 import org.signal.libsignal.net.UploadTooLargeException
-import org.signal.libsignal.net.getOrError
 import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.crypto.AttachmentCipherStreamUtil
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemoteId
@@ -23,7 +21,6 @@ import org.whispersystems.signalservice.internal.push.PushAttachmentData
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
 import org.whispersystems.signalservice.internal.push.http.AttachmentCipherOutputStreamFactory
 import org.whispersystems.signalservice.internal.push.http.ResumableUploadSpec
-import java.io.IOException
 import java.io.InputStream
 import kotlin.jvm.optionals.getOrNull
 
@@ -43,12 +40,10 @@ class AttachmentApi(
    * Gets a v4 attachment upload form, which provides the necessary information to upload an attachment.
    */
   fun getAttachmentV4UploadForm(uploadSizeBytes: Long): RequestResult<AttachmentUploadForm, UploadTooLargeException> {
-    return try {
-      runBlocking {
-        authWebSocket.runWithChatConnection { chatConnection ->
-          AuthMessagesService(chatConnection as AuthenticatedChatConnection).getUploadForm(uploadSizeBytes)
-        }
-      }.getOrError().map { form ->
+    return runBlocking {
+      authWebSocket.runCatchingWithChatConnection { chatConnection ->
+        AuthMessagesService(chatConnection).getUploadForm(uploadSizeBytes)
+      }.map { form ->
         AttachmentUploadForm(
           cdn = form.cdn,
           key = form.key,
@@ -56,10 +51,6 @@ class AttachmentApi(
           signedUploadLocation = form.signedUploadUrl.toString()
         )
       }
-    } catch (e: IOException) {
-      RequestResult.RetryableNetworkError(e)
-    } catch (e: Throwable) {
-      RequestResult.ApplicationError(e)
     }
   }
 

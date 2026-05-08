@@ -29,12 +29,12 @@ import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulRespons
 import org.whispersystems.signalservice.api.util.CredentialsProvider
 import org.whispersystems.signalservice.api.websocket.HealthMonitor
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
+import org.whispersystems.signalservice.internal.util.awaitRequest
 import org.whispersystems.signalservice.internal.util.whenComplete
 import java.io.IOException
 import java.net.SocketException
 import java.time.Instant
 import java.util.Optional
-import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -43,6 +43,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration
@@ -264,6 +265,7 @@ class LibSignalChatConnection(
 
           pendingCallbacks.clear()
         }
+
         else -> {
           Log.i(TAG, "$name Dropped successful connection because we are now ${state.value}")
           disconnect()
@@ -292,9 +294,11 @@ class LibSignalChatConnection(
         is DeviceDeregisteredException -> {
           state.onNext(WebSocketConnectionState.AUTHENTICATION_FAILED)
         }
+
         is AppExpiredException -> {
           state.onNext(WebSocketConnectionState.REMOTE_DEPRECATED)
         }
+
         else -> {
           Log.w(TAG, "Unknown connection failure reason", throwable)
           state.onNext(WebSocketConnectionState.FAILED)
@@ -394,15 +398,42 @@ class LibSignalChatConnection(
           )
           single
         }
+
         WebSocketConnectionState.CONNECTED -> {
           sendRequestInternal(request, timeoutSeconds, single)
           single
         }
+
         else -> {
           throw IllegalStateException("LibSignalChatConnection.state was neither dead, CONNECTING, or CONNECTED.")
         }
       }.subscribeOn(Schedulers.io()).observeOn(Schedulers.io())
     }
+  }
+
+  /**
+   * Coroutine-friendly version of [sendRequest] by mirroring [sendRequestInternal].
+   */
+  override suspend fun sendRequestSuspend(request: WebSocketRequestMessage, timeout: Duration): WebsocketResponse {
+    val (future, isUnidentified) = runWithChatConnection { connection ->
+      connection.send(request.toLibSignalRequest(timeout)) to (connection is UnauthenticatedChatConnection)
+    }
+
+    val response: ChatConnection.Response = try {
+      future.awaitRequest()
+    } catch (e: CancellationException) {
+      throw e
+    } catch (_: ConnectionInvalidatedException) {
+      throw NonSuccessfulResponseCodeException(4401)
+    } catch (e: Throwable) {
+      Log.w(TAG, "$name [sendRequestSuspend] Failure:", e)
+      throw SocketException("Failed to get response for request").apply { initCause(e) }
+    }
+
+    if (response.status in 400..599) {
+      healthMonitor.onMessageError(status = response.status, isIdentifiedWebSocket = !isUnidentified)
+    }
+    return response.toWebsocketResponse(isUnidentified = isUnidentified)
   }
 
   override fun sendKeepAlive() {
@@ -523,7 +554,8 @@ class LibSignalChatConnection(
           // This condition variable is created from CHAT_SERVICE_LOCK, and thus releases CHAT_SERVICE_LOCK
           //   while we await the condition variable.
           stateChangedOrMessageReceivedCondition.await(remainingTimeoutMillis, TimeUnit.MILLISECONDS)
-        } catch (_: InterruptedException) { }
+        } catch (_: InterruptedException) {
+        }
         val elapsedTimeMillis = System.currentTimeMillis() - startTime
         remainingTimeoutMillis = timeoutMillis - elapsedTimeMillis
       }
@@ -598,6 +630,7 @@ class LibSignalChatConnection(
             }
           }
         }
+
         else -> {
           continuation.resumeWithException(IOException("WebSocket is not connected (state: ${state.value})"))
         }

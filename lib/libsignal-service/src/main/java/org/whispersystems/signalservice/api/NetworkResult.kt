@@ -8,6 +8,7 @@ package org.whispersystems.signalservice.api
 import io.reactivex.rxjava3.core.Single
 import org.signal.core.util.concurrent.safeBlockingGet
 import org.whispersystems.signalservice.api.NetworkResult.ApplicationError
+import org.whispersystems.signalservice.api.NetworkResult.Companion.fromWebSocket
 import org.whispersystems.signalservice.api.NetworkResult.StatusCodeError
 import org.whispersystems.signalservice.api.push.exceptions.MalformedRequestException
 import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
@@ -148,6 +149,30 @@ sealed class NetworkResult<T>(
       webSocketResponseConverter: WebSocketResponseConverter<T>
     ): NetworkResult<T> {
       return fromWebSocket(webSocketResponseConverter) { signalWebSocket.request(request, timeout) }
+    }
+
+    /**
+     * Coroutine-friendly variant of the [fromWebSocket] overload that takes a [WebSocketResponseConverter].
+     */
+    suspend fun <T> fromWebSocketSuspend(
+      webSocketResponseConverter: WebSocketResponseConverter<T>,
+      fetcher: suspend () -> WebsocketResponse
+    ): NetworkResult<T> {
+      return try {
+        webSocketResponseConverter.convert(fetcher())
+      } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+      } catch (e: NonSuccessfulResponseCodeException) {
+        StatusCodeError(e)
+      } catch (e: IOException) {
+        NetworkError(e)
+      } catch (e: TimeoutException) {
+        NetworkError(PushNetworkException(e))
+      } catch (e: InterruptedException) {
+        NetworkError(PushNetworkException(e))
+      } catch (e: Throwable) {
+        ApplicationError(e)
+      }
     }
 
     /**
@@ -316,6 +341,21 @@ sealed class NetworkResult<T>(
    * @param predicate If this lambda returns true, the fallback will be triggered.
    */
   fun fallback(predicate: (NetworkResult<T>) -> Boolean = { true }, fallback: () -> NetworkResult<T>): NetworkResult<T> {
+    if (this is Success) {
+      return this
+    }
+
+    return if (predicate(this)) {
+      fallback()
+    } else {
+      this
+    }
+  }
+
+  /**
+   * See [fallback].
+   */
+  suspend fun fallbackSuspend(predicate: (NetworkResult<T>) -> Boolean = { true }, fallback: suspend () -> NetworkResult<T>): NetworkResult<T> {
     if (this is Success) {
       return this
     }
