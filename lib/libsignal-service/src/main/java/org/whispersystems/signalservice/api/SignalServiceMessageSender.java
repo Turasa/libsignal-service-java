@@ -46,6 +46,7 @@ import org.whispersystems.signalservice.api.crypto.UnidentifiedAccess;
 import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
 import org.whispersystems.signalservice.api.groupsv2.GroupSendEndorsements;
 import org.whispersystems.signalservice.api.keys.KeysApi;
+import org.whispersystems.signalservice.api.keys.PreKeyRepository;
 import org.whispersystems.signalservice.api.message.MessageApi;
 import org.whispersystems.signalservice.api.message.MessageApiKt;
 import org.whispersystems.signalservice.api.messages.SendMessageResult;
@@ -183,9 +184,10 @@ public class SignalServiceMessageSender {
   private final Optional<EventListener>       eventListener;
   private final IdentityKeyPair               localPniIdentity;
 
-  private final AttachmentApi attachmentApi;
-  private final MessageApi    messageApi;
-  private final KeysApi       keysApi;
+  private final AttachmentApi    attachmentApi;
+  private final MessageApi       messageApi;
+  private final KeysApi          keysApi;
+  private final PreKeyRepository preKeyRepository;
 
   private final Scheduler       scheduler;
   private final long            maxEnvelopeSize;
@@ -206,7 +208,8 @@ public class SignalServiceMessageSender {
                                     int maxIncrementalMacsPerEnvelope,
                                     BooleanSupplier useRestFallback,
                                     boolean useBinaryId,
-                                    boolean useStringId)
+                                    boolean useStringId,
+                                    PreKeyRepository preKeyRepository)
   {
     CredentialsProvider credentialsProvider = pushServiceSocket.getCredentialsProvider();
 
@@ -225,6 +228,7 @@ public class SignalServiceMessageSender {
     this.localPniIdentity              = store.pni().getIdentityKeyPair();
     this.scheduler                     = Schedulers.from(executor, false, false);
     this.keysApi                       = keysApi;
+    this.preKeyRepository              = preKeyRepository;
     this.useRestFallback               = useRestFallback;
     this.useBinaryId                   = useBinaryId;
     this.useStringId                   = useStringId;
@@ -2143,7 +2147,16 @@ public class SignalServiceMessageSender {
 
     long startTime = System.currentTimeMillis();
 
-    eagerlyFetchMissingPreKeys(recipients, sealedSenderAccesses, story);
+    List<PreKeyRepository.EagerPreKeyRequest> eagerRequests = new ArrayList<>(recipients.size());
+    for (int i = 0; i < recipients.size(); i++) {
+      eagerRequests.add(new PreKeyRepository.EagerPreKeyRequest(recipients.get(i), sealedSenderAccesses.get(i), story));
+    }
+    preKeyRepository.eagerlyFetchMissingPreKeys(eagerRequests, recipient -> {
+      if (eventListener.isPresent()) {
+        eventListener.get().onSecurityEvent(recipient);
+      }
+      return kotlin.Unit.INSTANCE;
+    });
 
     List<Observable<SendMessageResult>> singleResults              = new LinkedList<>();
     Iterator<SignalServiceAddress>      recipientIterator          = recipients.iterator();
@@ -2912,81 +2925,6 @@ public class SignalServiceMessageSender {
     }
   }
 
-  private void eagerlyFetchMissingPreKeys(List<SignalServiceAddress> recipients, List<SealedSenderAccess> sealedSenderAccesses, boolean story) {
-    long start = System.currentTimeMillis();
-
-    Iterator<SignalServiceAddress> recipientIterator          = recipients.iterator();
-    Iterator<SealedSenderAccess>   sealedSenderAccessIterator = sealedSenderAccesses.iterator();
-    List<Observable<Boolean>>      eagerFetches               = new LinkedList<>();
-
-    while (recipientIterator.hasNext()) {
-      SignalServiceAddress  recipient             = recipientIterator.next();
-      SealedSenderAccess    sealedSenderAccess    = sealedSenderAccessIterator.next();
-      SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getIdentifier(), SignalServiceAddress.DEFAULT_DEVICE_ID);
-
-      if (!aciStore.containsSession(signalProtocolAddress)) {
-        Observable<Boolean> thing = Single.fromCallable(() -> {
-                                            eagerlyFetchMissingPreKeys(recipient, sealedSenderAccess, story);
-                                            return true;
-                                          })
-                                          .subscribeOn(scheduler)
-                                          .toObservable();
-
-        eagerFetches.add(thing);
-      }
-    }
-
-    if (eagerFetches.isEmpty()) {
-      return;
-    }
-
-    Log.i(TAG, "[eagerPrefetch] Attempting to fetch prekeys for " + eagerFetches.size() + " recipients");
-
-    try {
-      //noinspection ResultOfMethodCallIgnored
-      Observable.mergeDelayError(eagerFetches, Integer.MAX_VALUE, 1)
-                .observeOn(scheduler)
-                .lastOrError()
-                .blockingGet();
-    } catch (RuntimeException e) {
-      Log.w(TAG, "[eagerPrefetch] Unexpectedly failed eager fetching prekeys", e);
-      return;
-    }
-
-    Log.i(TAG, "[eagerPrefetch] Completed in " + (System.currentTimeMillis() - start) + "ms");
-  }
-
-  private void eagerlyFetchMissingPreKeys(SignalServiceAddress recipient, SealedSenderAccess sealedSenderAccess, boolean story) {
-    SignalProtocolAddress signalProtocolAddress = new SignalProtocolAddress(recipient.getIdentifier(), SignalServiceAddress.DEFAULT_DEVICE_ID);
-
-    try {
-      List<PreKeyBundle> preKeys = getPreKeys(recipient, sealedSenderAccess, SignalServiceAddress.DEFAULT_DEVICE_ID, story);
-
-      for (PreKeyBundle preKey : preKeys) {
-        Log.d(TAG, "[eagerFetch] Initializing prekey session for " + signalProtocolAddress);
-
-        try {
-          SignalProtocolAddress preKeyAddress  = new SignalProtocolAddress(recipient.getIdentifier(), preKey.getDeviceId());
-          SignalSessionBuilder  sessionBuilder = new SignalSessionBuilder(sessionLock, new SessionBuilder(aciStore, preKeyAddress, localProtocolAddress));
-          sessionBuilder.process(preKey);
-        } catch (org.signal.libsignal.protocol.UntrustedIdentityException e) {
-          Log.i(TAG, "[eagerPrefetch] Untrusted identity for recipient");
-          return;
-
-        }
-      }
-
-      if (eventListener.isPresent()) {
-        eventListener.get().onSecurityEvent(recipient);
-      }
-    } catch (IOException e) {
-      Log.i(TAG, "[eagerPrefetch] Network issue encountered");
-    } catch (InvalidKeyException e) {
-      Log.i(TAG, "[eagerPrefetch] Invalid pre-key");
-      return;
-    }
-  }
-
   private List<PreKeyBundle> getPreKeys(SignalServiceAddress recipient, @Nullable SealedSenderAccess sealedSenderAccess, int deviceId, boolean story) throws IOException {
     try {
       // If it's only unrestricted because it's a story send, then we know it'll fail
@@ -2994,11 +2932,11 @@ public class SignalServiceMessageSender {
         sealedSenderAccess = null;
       }
 
-      return NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKeys(recipient, sealedSenderAccess, deviceId));
+      return NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKeysSync(recipient, sealedSenderAccess, deviceId));
     } catch (NonSuccessfulResponseCodeException e) {
       if (e.code == 401 && story) {
         Log.d(TAG, "Got 401 when fetching prekey for story. Trying without UD.");
-        return NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKeys(recipient, null, deviceId));
+        return NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKeysSync(recipient, null, deviceId));
       } else {
         throw e;
       }
@@ -3019,7 +2957,7 @@ public class SignalServiceMessageSender {
       clearSenderKeySharedWith(recipient, mismatchedDeviceIds);
 
       for (int missingDeviceId : mismatchedDevices.getMissingDevices()) {
-        PreKeyBundle preKey = NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKey(recipient, missingDeviceId));
+        PreKeyBundle preKey = NetworkResultUtil.toPreKeysLegacy(keysApi.getPreKeySync(recipient, missingDeviceId));
 
         try {
           SignalSessionBuilder sessionBuilder = new SignalSessionBuilder(sessionLock, new SessionBuilder(aciStore, new SignalProtocolAddress(recipient.getIdentifier(), missingDeviceId), localProtocolAddress));

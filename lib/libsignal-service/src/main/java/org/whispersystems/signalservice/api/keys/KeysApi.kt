@@ -55,7 +55,7 @@ class KeysApi(
    * - 200: Everything matches
    * - 409: Something doesn't match
    */
-  fun checkRepeatedUseKeys(
+  fun checkRepeatedUseKeysSync(
     serviceIdType: ServiceIdType,
     identityKey: IdentityKey,
     signedPreKeyId: Int,
@@ -83,7 +83,7 @@ class KeysApi(
    * GET /v2/keys?identity=[serviceIdType]
    * - 200: Success
    */
-  fun getAvailablePreKeyCounts(serviceIdType: ServiceIdType): NetworkResult<OneTimePreKeyCounts> {
+  fun getAvailablePreKeyCountsSync(serviceIdType: ServiceIdType): NetworkResult<OneTimePreKeyCounts> {
     val request = WebSocketRequestMessage.get("/v2/keys?identity=${serviceIdType.queryParam()}")
     return NetworkResult.fromWebSocketRequest(authWebSocket, request, OneTimePreKeyCounts::class)
   }
@@ -93,7 +93,7 @@ class KeysApi(
    *
    * PUT /v2/keys?identity=[preKeyUpload]`.serviceIdType`
    */
-  fun setPreKeys(preKeyUpload: PreKeyUpload): NetworkResult<Unit> {
+  fun setPreKeysSync(preKeyUpload: PreKeyUpload): NetworkResult<Unit> {
     val signedPreKey: SignedPreKeyEntity? = if (preKeyUpload.signedPreKey != null) {
       SignedPreKeyEntity(
         preKeyUpload.signedPreKey.id.toLong(),
@@ -147,7 +147,18 @@ class KeysApi(
    * - 404: No keys found for address/device
    * - 429: Rate limited
    */
-  fun getPreKeys(
+  fun getPreKeysSync(
+    destination: SignalServiceAddress,
+    sealedSenderAccess: SealedSenderAccess?,
+    deviceId: Int
+  ): NetworkResult<List<PreKeyBundle>> {
+    return getPreKeysBySpecifierSync(destination, sealedSenderAccess, if (deviceId == 1) "*" else deviceId.toString())
+  }
+
+  /**
+   * Coroutine-friendly variant of [getPreKeysSync] that suspends instead of blocking the calling thread.
+   */
+  suspend fun getPreKeys(
     destination: SignalServiceAddress,
     sealedSenderAccess: SealedSenderAccess?,
     deviceId: Int
@@ -165,8 +176,8 @@ class KeysApi(
    * - 404: No keys found for address/device
    * - 429: Rate limited
    */
-  fun getPreKey(destination: SignalServiceAddress, deviceId: Int): NetworkResult<PreKeyBundle> {
-    return getPreKeysBySpecifier(destination, null, deviceId.toString())
+  fun getPreKeySync(destination: SignalServiceAddress, deviceId: Int): NetworkResult<PreKeyBundle> {
+    return getPreKeysBySpecifierSync(destination, null, deviceId.toString())
       .then { bundles ->
         if (bundles.isNotEmpty()) {
           NetworkResult.Success(bundles[0])
@@ -188,9 +199,8 @@ class KeysApi(
    * - 404: No keys found for address/device
    * - 429: Rate limited
    */
-  private fun getPreKeysBySpecifier(destination: SignalServiceAddress, sealedSenderAccess: SealedSenderAccess?, deviceSpecifier: String): NetworkResult<List<PreKeyBundle>> {
-    val request = WebSocketRequestMessage.get("/v2/keys/${destination.identifier}/$deviceSpecifier")
-    Log.d(TAG, "Fetching prekeys for ${destination.identifier}.$deviceSpecifier, i.e. GET ${request.path}")
+  private fun getPreKeysBySpecifierSync(destination: SignalServiceAddress, sealedSenderAccess: SealedSenderAccess?, deviceSpecifier: String): NetworkResult<List<PreKeyBundle>> {
+    val request = preKeysRequest(destination, deviceSpecifier)
 
     val result: NetworkResult<PreKeyResponse> = NetworkResult.fromWebSocket {
       if (sealedSenderAccess != null) {
@@ -200,22 +210,54 @@ class KeysApi(
       }
     }
 
-    if (result is NetworkResult.StatusCodeError && result.code == 404) {
-      return NetworkResult.NetworkError(UnregisteredUserException(destination.identifier, result.exception))
+    return result.toPreKeyBundles(destination)
+  }
+
+  /**
+   * Coroutine-friendly counterpart to [getPreKeysBySpecifierSync] that suspends instead of blocking the calling thread.
+   */
+  private suspend fun getPreKeysBySpecifier(
+    destination: SignalServiceAddress,
+    sealedSenderAccess: SealedSenderAccess?,
+    deviceSpecifier: String
+  ): NetworkResult<List<PreKeyBundle>> {
+    val request = preKeysRequest(destination, deviceSpecifier)
+    val converter = NetworkResult.DefaultWebSocketConverter(PreKeyResponse::class)
+
+    val result: NetworkResult<PreKeyResponse> = NetworkResult.fromWebSocketSuspend(converter) {
+      if (sealedSenderAccess != null) {
+        unauthWebSocket.requestSuspend(request, sealedSenderAccess)
+      } else {
+        authWebSocket.requestSuspend(request)
+      }
     }
 
-    return result.map { response ->
+    return result.toPreKeyBundles(destination)
+  }
+
+  private fun preKeysRequest(destination: SignalServiceAddress, deviceSpecifier: String): WebSocketRequestMessage {
+    val request = WebSocketRequestMessage.get("/v2/keys/${destination.identifier}/$deviceSpecifier")
+    Log.d(TAG, "Fetching prekeys for ${destination.identifier}.$deviceSpecifier, i.e. GET ${request.path}")
+    return request
+  }
+
+  private fun NetworkResult<PreKeyResponse>.toPreKeyBundles(destination: SignalServiceAddress): NetworkResult<List<PreKeyBundle>> {
+    if (this is NetworkResult.StatusCodeError && this.code == 404) {
+      return NetworkResult.NetworkError(UnregisteredUserException(destination.identifier, this.exception))
+    }
+
+    return this.map { response ->
       val bundles: MutableList<PreKeyBundle> = LinkedList()
 
       for (device in response.getDevices()) {
         var preKey: ECPublicKey? = null
-        var signedPreKey: ECPublicKey? = null
-        var signedPreKeySignature: ByteArray? = null
+        var signedPreKey: ECPublicKey?
+        var signedPreKeySignature: ByteArray?
         var preKeyId = PreKeyBundle.NULL_PRE_KEY_ID
-        var signedPreKeyId = PreKeyBundle.NULL_PRE_KEY_ID
-        var kyberPreKeyId = PreKeyBundle.NULL_PRE_KEY_ID
-        var kyberPreKey: KEMPublicKey? = null
-        var kyberPreKeySignature: ByteArray? = null
+        var signedPreKeyId: Int
+        var kyberPreKeyId: Int
+        var kyberPreKey: KEMPublicKey?
+        var kyberPreKeySignature: ByteArray?
 
         if (device.getSignedPreKey() != null) {
           val rawSignedPreKeyId = device.getSignedPreKey().keyId
