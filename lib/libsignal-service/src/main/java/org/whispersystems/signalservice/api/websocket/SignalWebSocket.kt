@@ -64,6 +64,7 @@ sealed class SignalWebSocket(
     const val FOREGROUND_KEEPALIVE = "Foregrounded"
   }
 
+  @Volatile
   private var connection: WebSocketConnection? = null
   val connectionName
     get() = connection?.name ?: "[null]"
@@ -75,6 +76,8 @@ sealed class SignalWebSocket(
   private val keepAliveChangeListeners: MutableSet<Listener> = CopyOnWriteArraySet()
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+  @Volatile
   private var delayedDisconnectJob: Job? = null
 
   val state: Observable<WebSocketConnectionState> = _state
@@ -209,9 +212,20 @@ sealed class SignalWebSocket(
     }
   }
 
-  @Synchronized
   @Throws(WebSocketUnavailableException::class)
   protected fun getWebSocket(): WebSocketConnection {
+    if (!canConnect.canConnect()) {
+      throw WebSocketUnavailableException()
+    }
+
+    connection?.takeIf { !it.isDead() }?.let { return it }
+
+    return getOrCreateWebSocketLocked()
+  }
+
+  @Synchronized
+  @Throws(WebSocketUnavailableException::class)
+  private fun getOrCreateWebSocketLocked(): WebSocketConnection {
     if (!canConnect.canConnect()) {
       throw WebSocketUnavailableException()
     }
@@ -252,6 +266,9 @@ sealed class SignalWebSocket(
   }
 
   private fun restartDelayedDisconnectIfNecessary() {
+    if (delayedDisconnectJob?.isActive != true) {
+      return
+    }
     synchronized(this) {
       if (delayedDisconnectJob?.isActive == true) {
         startDelayedDisconnectIfNecessary()

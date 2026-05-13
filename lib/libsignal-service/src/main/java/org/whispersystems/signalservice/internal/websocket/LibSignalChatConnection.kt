@@ -99,6 +99,8 @@ class LibSignalChatConnection(
   // chatConnectionFuture: Set only when state == CONNECTING
   private val CHAT_SERVICE_LOCK = ReentrantLock()
   private val stateChangedOrMessageReceivedCondition = CHAT_SERVICE_LOCK.newCondition()
+
+  @Volatile
   private var chatConnection: ChatConnection? = null
   private var chatConnectionFuture: CompletableFuture<out ChatConnection>? = null
 
@@ -320,19 +322,17 @@ class LibSignalChatConnection(
   }
 
   override fun isDead(): Boolean {
-    CHAT_SERVICE_LOCK.withLock {
-      return when (state.value) {
-        WebSocketConnectionState.DISCONNECTED,
-        WebSocketConnectionState.DISCONNECTING,
-        WebSocketConnectionState.FAILED,
-        WebSocketConnectionState.AUTHENTICATION_FAILED,
-        WebSocketConnectionState.REMOTE_DEPRECATED -> true
+    return when (state.value) {
+      WebSocketConnectionState.DISCONNECTED,
+      WebSocketConnectionState.DISCONNECTING,
+      WebSocketConnectionState.FAILED,
+      WebSocketConnectionState.AUTHENTICATION_FAILED,
+      WebSocketConnectionState.REMOTE_DEPRECATED -> true
 
-        WebSocketConnectionState.CONNECTING,
-        WebSocketConnectionState.CONNECTED -> false
+      WebSocketConnectionState.CONNECTING,
+      WebSocketConnectionState.CONNECTED -> false
 
-        null -> throw IllegalStateException("LibSignalChatConnection.state can never be null")
-      }
+      null -> throw IllegalStateException("LibSignalChatConnection.state can never be null")
     }
   }
 
@@ -591,48 +591,54 @@ class LibSignalChatConnection(
   }
 
   @OptIn(InternalCoroutinesApi::class)
-  override suspend fun <T> runWithChatConnection(callback: (ChatConnection) -> T): T = suspendCancellableCoroutine { continuation ->
-    CHAT_SERVICE_LOCK.withLock {
-      when (state.value) {
-        WebSocketConnectionState.CONNECTED -> {
-          try {
-            val result = callback(chatConnection!!)
-            continuation.resume(result)
-          } catch (e: Exception) {
-            continuation.resumeWithException(e)
-          }
-        }
+  override suspend fun <T> runWithChatConnection(callback: (ChatConnection) -> T): T {
+    if (state.value == WebSocketConnectionState.CONNECTED) {
+      chatConnection?.let { return callback(it) }
+    }
 
-        WebSocketConnectionState.CONNECTING -> {
-          val action = PendingAction(
-            onConnectionSuccess = { connection ->
-              CHAT_SERVICE_LOCK.withLock {
-                try {
-                  val result = callback(connection)
-                  // NB: We use the experimental tryResume* methods here to avoid crashing if the continuation is
-                  // canceled before we finish the connection attempt, but the PendingAction cannot be removed from
-                  // pendingActions before we get to executing it.
-                  continuation.tryResume(result)?.let(continuation::completeResume)
-                } catch (e: Throwable) {
-                  continuation.tryResumeWithException(e)?.let(continuation::completeResume)
+    return suspendCancellableCoroutine { continuation ->
+      CHAT_SERVICE_LOCK.withLock {
+        when (state.value) {
+          WebSocketConnectionState.CONNECTED -> {
+            try {
+              val result = callback(chatConnection!!)
+              continuation.resume(result)
+            } catch (e: Exception) {
+              continuation.resumeWithException(e)
+            }
+          }
+
+          WebSocketConnectionState.CONNECTING -> {
+            val action = PendingAction(
+              onConnectionSuccess = { connection ->
+                CHAT_SERVICE_LOCK.withLock {
+                  try {
+                    val result = callback(connection)
+                    // NB: We use the experimental tryResume* methods here to avoid crashing if the continuation is
+                    // canceled before we finish the connection attempt, but the PendingAction cannot be removed from
+                    // pendingActions before we get to executing it.
+                    continuation.tryResume(result)?.let(continuation::completeResume)
+                  } catch (e: Throwable) {
+                    continuation.tryResumeWithException(e)?.let(continuation::completeResume)
+                  }
                 }
+              },
+              onFailure = { error ->
+                continuation.tryResumeWithException(error)?.let(continuation::completeResume)
               }
-            },
-            onFailure = { error ->
-              continuation.tryResumeWithException(error)?.let(continuation::completeResume)
-            }
-          )
-          pendingCallbacks.add(action)
+            )
+            pendingCallbacks.add(action)
 
-          continuation.invokeOnCancellation {
-            CHAT_SERVICE_LOCK.withLock {
-              pendingCallbacks.removeIf { it === action }
+            continuation.invokeOnCancellation {
+              CHAT_SERVICE_LOCK.withLock {
+                pendingCallbacks.removeIf { it === action }
+              }
             }
           }
-        }
 
-        else -> {
-          continuation.resumeWithException(IOException("WebSocket is not connected (state: ${state.value})"))
+          else -> {
+            continuation.resumeWithException(IOException("WebSocket is not connected (state: ${state.value})"))
+          }
         }
       }
     }
