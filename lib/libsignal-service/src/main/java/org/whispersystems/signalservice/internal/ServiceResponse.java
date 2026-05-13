@@ -2,10 +2,10 @@ package org.whispersystems.signalservice.internal;
 
 
 
-import org.whispersystems.signalservice.api.NetworkResult;
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
-import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
-import org.whispersystems.signalservice.api.util.Preconditions;
+import org.signal.network.NetworkResult;
+import org.signal.network.exceptions.NonSuccessfulResponseCodeException;
+import org.signal.network.exceptions.PushNetworkException;
+import org.signal.network.util.Preconditions;
 
 import java.io.IOException;
 import java.util.Optional;

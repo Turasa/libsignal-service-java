@@ -5,7 +5,7 @@
 
 package org.whispersystems.signalservice.api.registration
 
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
 import org.whispersystems.signalservice.api.account.AccountAttributes
 import org.whispersystems.signalservice.api.account.PreKeyCollection
 import org.whispersystems.signalservice.api.messages.multidevice.RegisterAsSecondaryDeviceResponse

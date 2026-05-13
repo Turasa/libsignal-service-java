@@ -6,11 +6,12 @@
 package org.signal.network.api
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.post
+import org.signal.network.websocket.put
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
-import org.whispersystems.signalservice.internal.post
-import org.whispersystems.signalservice.internal.put
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 
 /**
  * Calls for requesting and submitting rate limit triggered challenges.

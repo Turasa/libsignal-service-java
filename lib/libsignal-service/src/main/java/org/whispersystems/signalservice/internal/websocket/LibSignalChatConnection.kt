@@ -25,7 +25,10 @@ import org.signal.libsignal.net.ConnectionInvalidatedException
 import org.signal.libsignal.net.DeviceDeregisteredException
 import org.signal.libsignal.net.Network
 import org.signal.libsignal.net.UnauthenticatedChatConnection
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
+import org.signal.network.exceptions.NonSuccessfulResponseCodeException
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.WebSocketResponseMessage
+import org.signal.network.websocket.WebsocketResponse
 import org.whispersystems.signalservice.api.util.CredentialsProvider
 import org.whispersystems.signalservice.api.websocket.HealthMonitor
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState

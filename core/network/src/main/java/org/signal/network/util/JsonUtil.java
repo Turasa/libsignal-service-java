@@ -4,7 +4,7 @@
  * Licensed according to the LICENSE file in this repository.
  */
 
-package org.whispersystems.signalservice.internal.util;
+package org.signal.network.util;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -26,7 +26,7 @@ import org.signal.libsignal.protocol.logging.Log;
 import org.signal.core.models.MasterKey;
 import org.signal.core.models.ServiceId;
 import org.signal.core.models.ServiceId.ACI;
-import org.whispersystems.signalservice.api.push.exceptions.MalformedResponseException;
+import org.signal.network.exceptions.MalformedResponseException;
 import org.signal.core.util.UuidUtil;
 
 import java.io.IOException;

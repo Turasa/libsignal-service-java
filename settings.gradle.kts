@@ -25,3 +25,5 @@ include(":lib:network")
 include(":core:util-jvm")
 
 include(":core:models-jvm")
+
+include(":core:network")

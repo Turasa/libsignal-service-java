@@ -10,7 +10,7 @@ import org.signal.core.util.logging.Log
 import org.signal.libsignal.net.AuthMessagesService
 import org.signal.libsignal.net.RequestResult
 import org.signal.libsignal.net.UploadTooLargeException
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
 import org.whispersystems.signalservice.api.crypto.AttachmentCipherStreamUtil
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentRemoteId
 import org.whispersystems.signalservice.api.messages.SignalServiceAttachmentStream

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-package org.whispersystems.signalservice.internal
+package org.signal.network.websocket
 
 import okio.ByteString.Companion.toByteString
-import org.whispersystems.signalservice.internal.util.JsonUtil
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
+import org.signal.network.util.JsonUtil
+import org.signal.network.websocket.WebSocketRequestMessage
 import java.security.SecureRandom
 
 /**

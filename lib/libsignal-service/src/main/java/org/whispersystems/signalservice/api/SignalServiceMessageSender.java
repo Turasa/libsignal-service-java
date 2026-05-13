@@ -5,6 +5,8 @@
  */
 package org.whispersystems.signalservice.api;
 
+import org.signal.network.NetworkResult;
+
 import org.signal.core.models.ServiceId;
 import org.signal.core.models.ServiceId.PNI;
 import org.signal.core.util.Base64;
@@ -84,9 +86,9 @@ import org.whispersystems.signalservice.api.messages.shared.SharedContact;
 import org.whispersystems.signalservice.api.push.DistributionId;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.push.exceptions.AuthorizationFailedException;
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException;
+import org.signal.network.exceptions.NonSuccessfulResponseCodeException;
 import org.whispersystems.signalservice.api.push.exceptions.ProofRequiredException;
-import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException;
+import org.signal.network.exceptions.PushNetworkException;
 import org.whispersystems.signalservice.api.push.exceptions.RateLimitException;
 import org.whispersystems.signalservice.api.push.exceptions.RetryNetworkException;
 import org.whispersystems.signalservice.api.push.exceptions.ServerRejectedException;
@@ -94,7 +96,7 @@ import org.whispersystems.signalservice.api.push.exceptions.UnknownGroupSendExce
 import org.whispersystems.signalservice.api.push.exceptions.UnregisteredUserException;
 import org.whispersystems.signalservice.api.util.AttachmentPointerUtil;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
-import org.whispersystems.signalservice.api.util.Preconditions;
+import org.signal.network.util.Preconditions;
 import org.whispersystems.signalservice.api.util.Uint64RangeException;
 import org.whispersystems.signalservice.api.util.Uint64Util;
 import org.whispersystems.signalservice.api.websocket.WebSocketUnavailableException;

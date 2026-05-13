@@ -3,21 +3,17 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-package org.whispersystems.signalservice.api
+package org.signal.network
 
 import io.reactivex.rxjava3.core.Single
 import org.signal.core.util.concurrent.safeBlockingGet
-import org.whispersystems.signalservice.api.NetworkResult.ApplicationError
-import org.whispersystems.signalservice.api.NetworkResult.Companion.fromWebSocket
-import org.whispersystems.signalservice.api.NetworkResult.StatusCodeError
-import org.whispersystems.signalservice.api.push.exceptions.MalformedRequestException
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
-import org.whispersystems.signalservice.api.push.exceptions.PushNetworkException
-import org.whispersystems.signalservice.api.websocket.SignalWebSocket
-import org.whispersystems.signalservice.internal.util.JsonUtil
-import org.whispersystems.signalservice.internal.websocket.WebSocketConnection
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
-import org.whispersystems.signalservice.internal.websocket.WebsocketResponse
+import org.signal.network.NetworkResult.ApplicationError
+import org.signal.network.NetworkResult.StatusCodeError
+import org.signal.network.exceptions.MalformedRequestException
+import org.signal.network.exceptions.NonSuccessfulResponseCodeException
+import org.signal.network.exceptions.PushNetworkException
+import org.signal.network.util.JsonUtil
+import org.signal.network.websocket.WebsocketResponse
 import java.io.IOException
 import java.util.concurrent.TimeoutException
 import kotlin.reflect.KClass
@@ -100,55 +96,6 @@ sealed class NetworkResult<T>(
       } catch (e: Throwable) {
         ApplicationError(e)
       }
-    }
-
-    /**
-     * A convenience method to convert a websocket request into a network result.
-     * Common HTTP errors will be translated to [StatusCodeError]s.
-     */
-    @JvmStatic
-    fun fromWebSocketRequest(
-      signalWebSocket: SignalWebSocket,
-      request: WebSocketRequestMessage,
-      timeout: Duration = WebSocketConnection.DEFAULT_SEND_TIMEOUT
-    ): NetworkResult<Unit> = fromWebSocketRequest(
-      signalWebSocket = signalWebSocket,
-      request = request,
-      timeout = timeout,
-      clazz = Unit::class
-    )
-
-    /**
-     * A convenience method to convert a websocket request into a network result with simple conversion of the response body to the desired class.
-     * Common HTTP errors will be translated to [StatusCodeError]s.
-     */
-    @JvmStatic
-    fun <T : Any> fromWebSocketRequest(
-      signalWebSocket: SignalWebSocket,
-      request: WebSocketRequestMessage,
-      clazz: KClass<T>,
-      timeout: Duration = WebSocketConnection.DEFAULT_SEND_TIMEOUT
-    ): NetworkResult<T> {
-      return fromWebSocketRequest(
-        signalWebSocket = signalWebSocket,
-        request = request,
-        timeout = timeout,
-        webSocketResponseConverter = DefaultWebSocketConverter(clazz)
-      )
-    }
-
-    /**
-     * A convenience method to convert a websocket request into a network result with the ability to fully customize the conversion of the response.
-     * Common HTTP errors will be translated to [StatusCodeError]s.
-     */
-    @JvmStatic
-    fun <T : Any> fromWebSocketRequest(
-      signalWebSocket: SignalWebSocket,
-      request: WebSocketRequestMessage,
-      timeout: Duration = WebSocketConnection.DEFAULT_SEND_TIMEOUT,
-      webSocketResponseConverter: WebSocketResponseConverter<T>
-    ): NetworkResult<T> {
-      return fromWebSocket(webSocketResponseConverter) { signalWebSocket.request(request, timeout) }
     }
 
     /**

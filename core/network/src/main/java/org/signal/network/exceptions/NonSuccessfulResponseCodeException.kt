@@ -3,7 +3,7 @@
  *
  * Licensed according to the LICENSE file in this repository.
  */
-package org.whispersystems.signalservice.api.push.exceptions
+package org.signal.network.exceptions
 
 import java.io.IOException
 

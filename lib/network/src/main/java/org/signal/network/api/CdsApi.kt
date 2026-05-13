@@ -10,13 +10,14 @@ import org.signal.core.util.logging.Log
 import org.signal.libsignal.net.CdsiProtocolException
 import org.signal.libsignal.net.Network
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.get
 import org.whispersystems.signalservice.api.cds.CdsiV2Service
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.push.exceptions.CdsiInvalidTokenException
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
-import org.whispersystems.signalservice.internal.get
 import org.whispersystems.signalservice.internal.push.CdsiAuthResponse
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 import java.io.IOException
 import java.util.Optional
 import java.util.concurrent.TimeUnit
@@ -39,7 +40,7 @@ class CdsApi(private val authWebSocket: SignalWebSocket.AuthenticatedWebSocket) 
    * - 200: Success
    * - 401: Not authenticated
    *
-   * And then CDS websocket communications, can return the following within [org.whispersystems.signalservice.api.NetworkResult.StatusCodeError]
+   * And then CDS websocket communications, can return the following within [org.signal.network.NetworkResult.StatusCodeError]
    * - [org.whispersystems.signalservice.api.push.exceptions.CdsiResourceExhaustedException]: Rate limited
    * - [org.whispersystems.signalservice.api.push.exceptions.CdsiInvalidTokenException]: Token no longer valid
    */

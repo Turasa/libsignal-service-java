@@ -18,7 +18,7 @@ import org.signal.core.util.logging.Log
 import org.signal.libsignal.zkgroup.VerificationFailedException
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
 import org.whispersystems.signalservice.api.crypto.SealedSenderAccess
 import org.whispersystems.signalservice.api.push.exceptions.RateLimitException
 import kotlin.time.Duration

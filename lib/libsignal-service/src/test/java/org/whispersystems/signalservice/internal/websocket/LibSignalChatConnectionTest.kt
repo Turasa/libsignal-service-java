@@ -20,6 +20,9 @@ import org.signal.libsignal.net.ChatConnectionListener
 import org.signal.libsignal.net.ChatServiceException
 import org.signal.libsignal.net.Network
 import org.signal.libsignal.net.UnauthenticatedChatConnection
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.WebSocketResponseMessage
+import org.signal.network.websocket.WebsocketResponse
 import org.whispersystems.signalservice.api.websocket.HealthMonitor
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 import java.io.IOException

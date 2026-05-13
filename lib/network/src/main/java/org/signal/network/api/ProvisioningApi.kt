@@ -8,16 +8,17 @@ package org.signal.network.api
 import org.signal.core.util.Base64
 import org.signal.core.util.urlEncode
 import org.signal.libsignal.protocol.ecc.ECPublicKey
+import org.signal.network.NetworkResult
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.get
+import org.signal.network.websocket.put
 import org.signal.registration.proto.RegistrationProvisionMessage
-import org.whispersystems.signalservice.api.NetworkResult
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.provisioning.ProvisioningMessage
 import org.whispersystems.signalservice.api.provisioning.RestoreMethod
 import org.whispersystems.signalservice.api.registration.RestoreMethodBody
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
 import org.whispersystems.signalservice.internal.crypto.PrimaryProvisioningCipher
-import org.whispersystems.signalservice.internal.get
-import org.whispersystems.signalservice.internal.put
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 import kotlin.time.Duration.Companion.seconds
 
 /**

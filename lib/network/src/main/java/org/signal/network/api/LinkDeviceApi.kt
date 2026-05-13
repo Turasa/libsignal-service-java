@@ -17,7 +17,12 @@ import org.signal.core.util.urlEncode
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.ecc.ECPublicKey
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.delete
+import org.signal.network.websocket.get
+import org.signal.network.websocket.put
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.link.LinkedDeviceVerificationCodeResponse
 import org.whispersystems.signalservice.api.link.SetDeviceNameRequest
 import org.whispersystems.signalservice.api.link.SetLinkedDeviceTransferArchiveRequest
@@ -28,13 +33,9 @@ import org.whispersystems.signalservice.api.messages.multidevice.DeviceInfo
 import org.whispersystems.signalservice.api.provisioning.ProvisioningMessage
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
 import org.whispersystems.signalservice.internal.crypto.PrimaryProvisioningCipher
-import org.whispersystems.signalservice.internal.delete
-import org.whispersystems.signalservice.internal.get
 import org.whispersystems.signalservice.internal.push.DeviceInfoList
 import org.whispersystems.signalservice.internal.push.ProvisionMessage
 import org.whispersystems.signalservice.internal.push.ProvisioningVersion
-import org.whispersystems.signalservice.internal.put
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

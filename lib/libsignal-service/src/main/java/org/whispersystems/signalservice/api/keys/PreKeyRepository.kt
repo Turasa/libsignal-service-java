@@ -19,7 +19,7 @@ import org.signal.libsignal.protocol.SessionBuilder
 import org.signal.libsignal.protocol.SignalProtocolAddress
 import org.signal.libsignal.protocol.UntrustedIdentityException
 import org.signal.libsignal.protocol.state.PreKeyBundle
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
 import org.whispersystems.signalservice.api.SignalServiceAccountDataStore
 import org.whispersystems.signalservice.api.SignalSessionLock
 import org.whispersystems.signalservice.api.crypto.SealedSenderAccess

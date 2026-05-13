@@ -13,22 +13,23 @@ import org.signal.libsignal.zkgroup.profiles.ClientZkProfileOperations
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential
 import org.signal.libsignal.zkgroup.profiles.ProfileKey
 import org.signal.libsignal.zkgroup.profiles.ProfileKeyCredentialRequestContext
-import org.whispersystems.signalservice.api.NetworkResult
+import org.signal.network.NetworkResult
+import org.signal.network.util.JsonUtil
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.WebsocketResponse
+import org.signal.network.websocket.get
+import org.signal.network.websocket.put
 import org.whispersystems.signalservice.api.crypto.ProfileCipher
 import org.whispersystems.signalservice.api.crypto.ProfileCipherOutputStream
 import org.whispersystems.signalservice.api.crypto.SealedSenderAccess
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.services.ProfileService
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
-import org.whispersystems.signalservice.internal.get
 import org.whispersystems.signalservice.internal.push.PaymentAddress
 import org.whispersystems.signalservice.internal.push.ProfileAvatarData
 import org.whispersystems.signalservice.internal.push.ProfileAvatarUploadAttributes
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
 import org.whispersystems.signalservice.internal.push.http.ProfileCipherOutputStreamFactory
-import org.whispersystems.signalservice.internal.put
-import org.whispersystems.signalservice.internal.util.JsonUtil
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
-import org.whispersystems.signalservice.internal.websocket.WebsocketResponse
 import java.security.SecureRandom
 
 /**

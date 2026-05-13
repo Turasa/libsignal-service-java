@@ -2,6 +2,9 @@ package org.whispersystems.signalservice.internal.websocket
 
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.WebSocketResponseMessage
+import org.signal.network.websocket.WebsocketResponse
 import org.whispersystems.signalservice.api.websocket.WebSocketConnectionState
 import java.io.IOException
 import java.util.Optional

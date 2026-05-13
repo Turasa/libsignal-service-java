@@ -14,8 +14,8 @@ import org.signal.core.util.bytes
 import org.signal.core.util.isNotEmpty
 import org.signal.core.util.logging.Log
 import org.signal.libsignal.protocol.InvalidKeyException
-import org.whispersystems.signalservice.api.NetworkResult
-import org.whispersystems.signalservice.api.push.exceptions.NonSuccessfulResponseCodeException
+import org.signal.network.NetworkResult
+import org.signal.network.exceptions.NonSuccessfulResponseCodeException
 import org.whispersystems.signalservice.api.storage.RecordIkm
 import org.whispersystems.signalservice.api.storage.SignalStorageCipher
 import org.whispersystems.signalservice.api.storage.SignalStorageManifest

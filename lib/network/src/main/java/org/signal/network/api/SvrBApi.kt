@@ -47,7 +47,7 @@ class SvrBApi(private val network: Network) {
    * See [org.signal.libsignal.net.SvrB.store].
    *
    * Handling this one is funny because the underlying protocols don't use status codes, instead favoring complex results.
-   * As a result, responses are only [org.whispersystems.signalservice.api.NetworkResult.Success] and [org.whispersystems.signalservice.api.NetworkResult.NetworkError], with errors being accounted for
+   * As a result, responses are only [org.signal.network.NetworkResult.Success] and [org.signal.network.NetworkResult.NetworkError], with errors being accounted for
    * in the success case via the sealed result class.
    */
   fun store(auth: AuthCredentials, backupKey: MessageBackupKey, previousSecretData: ByteArray): StoreResult {
@@ -79,7 +79,7 @@ class SvrBApi(private val network: Network) {
    * See [org.signal.libsignal.net.SvrB.restore]
    *
    * Handling this one is funny because the underlying protocols don't use status codes, instead favoring complex results.
-   * As a result, responses are only [org.whispersystems.signalservice.api.NetworkResult.Success] and [org.whispersystems.signalservice.api.NetworkResult.NetworkError], with errors being accounted for
+   * As a result, responses are only [org.signal.network.NetworkResult.Success] and [org.signal.network.NetworkResult.NetworkError], with errors being accounted for
    * in the success case via the sealed result class.
    */
   fun restore(auth: AuthCredentials, backupKey: MessageBackupKey, forwardSecrecyMetadata: ByteArray): RestoreResult {

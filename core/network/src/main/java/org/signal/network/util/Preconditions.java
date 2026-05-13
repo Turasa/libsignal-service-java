@@ -1,4 +1,4 @@
-package org.whispersystems.signalservice.api.util;
+package org.signal.network.util;
 
 /**
  * Convenient ways to assert expected state.

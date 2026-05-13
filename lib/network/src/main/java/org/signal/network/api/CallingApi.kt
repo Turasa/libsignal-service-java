@@ -7,19 +7,20 @@ package org.signal.network.api
 
 import org.signal.libsignal.zkgroup.calllinks.CreateCallLinkCredentialRequest
 import org.signal.libsignal.zkgroup.calllinks.CreateCallLinkCredentialResponse
+import org.signal.network.NetworkResult
+import org.signal.network.websocket.WebSocketRequestMessage
+import org.signal.network.websocket.get
+import org.signal.network.websocket.post
+import org.signal.network.websocket.putCustom
 import org.signal.storageservice.protos.calls.quality.SubmitCallQualitySurveyRequest
-import org.whispersystems.signalservice.api.NetworkResult
+import org.whispersystems.signalservice.api.fromWebSocketRequest
 import org.whispersystems.signalservice.api.messages.calls.CallingResponse
 import org.whispersystems.signalservice.api.messages.calls.TurnServerInfo
 import org.whispersystems.signalservice.api.websocket.SignalWebSocket
-import org.whispersystems.signalservice.internal.get
-import org.whispersystems.signalservice.internal.post
 import org.whispersystems.signalservice.internal.push.CreateCallLinkAuthRequest
 import org.whispersystems.signalservice.internal.push.CreateCallLinkAuthResponse
 import org.whispersystems.signalservice.internal.push.GetCallingRelaysResponse
 import org.whispersystems.signalservice.internal.push.PushServiceSocket
-import org.whispersystems.signalservice.internal.putCustom
-import org.whispersystems.signalservice.internal.websocket.WebSocketRequestMessage
 
 /**
  * Provide calling specific network apis.

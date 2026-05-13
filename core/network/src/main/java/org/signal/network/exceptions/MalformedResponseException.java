@@ -1,4 +1,4 @@
-package org.whispersystems.signalservice.api.push.exceptions;
+package org.signal.network.exceptions;
 
 import java.io.IOException;
 
