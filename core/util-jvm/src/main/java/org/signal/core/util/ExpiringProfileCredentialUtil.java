@@ -1,4 +1,4 @@
-package org.whispersystems.signalservice.api.util;
+package org.signal.core.util;
 
 import org.signal.libsignal.zkgroup.profiles.ExpiringProfileKeyCredential;
 

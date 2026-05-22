@@ -1,12 +1,12 @@
-package org.whispersystems.signalservice.api.util;
+package org.signal.core.util;
 
 import org.junit.Test;
 
 import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
-import static org.whispersystems.signalservice.api.util.Uint64Util.bigIntegerToUInt64;
-import static org.whispersystems.signalservice.api.util.Uint64Util.uint64ToBigInteger;
+import static org.signal.core.util.Uint64Util.bigIntegerToUInt64;
+import static org.signal.core.util.Uint64Util.uint64ToBigInteger;
 
 public final class Uint64UtilTest {
 

@@ -1,4 +1,4 @@
-package org.whispersystems.util;
+package org.signal.core.util;
 
 public final class ByteArrayUtil {
 

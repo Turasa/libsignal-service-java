@@ -1,4 +1,4 @@
-package org.whispersystems.signalservice.api.util;
+package org.signal.core.util;
 
 import java.math.BigInteger;
 
