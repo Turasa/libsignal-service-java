@@ -2,7 +2,7 @@
 # ./gradlew --write-verification-metadata sha256 qa --rerun-tasks
 
 [versions]
-kotlin = "2.1.0"
+kotlin = "2.2.20"
 libsignal-client = "0.94.1"
 ktlint = "14.2.0"
 javaVersion = "17"
@@ -11,6 +11,7 @@ kotlinJvmTarget = "17"
 [plugins]
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [libraries]
 # Kotlin
@@ -35,3 +36,4 @@ square-okhttp3 = "com.squareup.okhttp3:okhttp:5.3.2"
 square-okio = "com.squareup.okio:okio:3.17.0"
 rxjava3-rxjava = "io.reactivex.rxjava3:rxjava:3.1.12"
 rxjava3-rxkotlin = "io.reactivex.rxjava3:rxkotlin:3.0.1"
+arrow-core = "io.arrow-kt:arrow-core:2.2.2.1"
