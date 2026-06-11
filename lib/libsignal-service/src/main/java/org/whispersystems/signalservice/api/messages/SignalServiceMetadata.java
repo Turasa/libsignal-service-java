@@ -32,7 +32,7 @@ public final class SignalServiceMetadata {
     this.serverReceivedTimestamp  = serverReceivedTimestamp;
     this.serverDeliveredTimestamp = serverDeliveredTimestamp;
     this.needsReceipt             = needsReceipt;
-    this.serverGuid               = serverGuid;
+    this.serverGuid               = serverGuid != null ? serverGuid : "";
     this.groupId                  = groupId;
     this.destinationUuid          = destinationUuid != null ? destinationUuid : "";
   }
