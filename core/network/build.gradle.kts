@@ -8,6 +8,7 @@ import org.gradle.api.tasks.SourceSetContainer
 plugins {
   id("java-library")
   id("org.jetbrains.kotlin.jvm")
+  alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.ktlint)
   id("com.squareup.wire")
 }
@@ -73,6 +74,8 @@ dependencies {
   api(libs.square.okio)
   api(libs.square.okhttp3)
 
+  api(libs.kotlinx.serialization.json)
+
   implementation(libs.google.jsr305)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.kotlinx.coroutines.core.jvm)
@@ -80,7 +83,9 @@ dependencies {
 
   implementation(project(":core:util-jvm"))
   implementation(project(":core:models-jvm"))
+  implementation(project(":core:serialization"))
 
   testImplementation(testLibs.junit.junit)
   testImplementation(testLibs.assertk)
+  testImplementation(testFixtures(project(":core:serialization")))
 }
